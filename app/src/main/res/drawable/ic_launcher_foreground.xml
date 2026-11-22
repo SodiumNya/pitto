@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 卡片 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M33,38h42a5,5 0 0 1 5,5v22a5,5 0 0 1 -5,5h-42a5,5 0 0 1 -5,-5v-22a5,5 0 0 1 5,-5z" />
+    <!-- 条纹 -->
+    <path
+        android:fillColor="#7FD1B9"
+        android:pathData="M28,46h52v6h-52z" />
+    <!-- 非接触波纹 -->
+    <path
+        android:strokeColor="#0E7C66"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round"
+        android:pathData="M64,57a4.5,4.5 0 0 1 0,7M68,54.5a8,8 0 0 1 0,12M72,52a11.5,11.5 0 0 1 0,17" />
+</vector>

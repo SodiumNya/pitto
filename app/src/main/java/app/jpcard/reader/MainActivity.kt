@@ -1,0 +1,123 @@
+package app.jpcard.reader
+
+import android.content.Intent
+import android.nfc.NfcAdapter
+import android.nfc.Tag
+import android.os.Build
+import android.os.Bundle
+import android.provider.Settings
+import android.view.HapticFeedbackConstants
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import app.jpcard.reader.data.CardStore
+import app.jpcard.reader.nfc.CardReadException
+import app.jpcard.reader.nfc.FelicaReader
+import app.jpcard.reader.ui.App
+import app.jpcard.reader.ui.AppActions
+import app.jpcard.reader.ui.AppState
+import app.jpcard.reader.ui.NfcStatus
+import app.jpcard.reader.ui.theme.AppTheme
+
+class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
+
+    private var nfc: NfcAdapter? = null
+    private lateinit var store: CardStore
+    private val state = AppState()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
+        store = CardStore(this)
+        nfc = NfcAdapter.getDefaultAdapter(this)
+        state.cards = store.all()
+
+        val actions = AppActions(
+            openCard = { state.selectedIdm = it },
+            back = { state.selectedIdm = null },
+            rename = { idm, name -> store.rename(idm, name); state.cards = store.all() },
+            delete = { idm ->
+                store.delete(idm)
+                state.cards = store.all()
+                state.selectedIdm = null
+            },
+            dismissError = { state.error = null },
+            openNfcSettings = { startActivity(Intent(Settings.ACTION_NFC_SETTINGS)) },
+        )
+        setContent { AppTheme { App(state, actions) } }
+
+        if (savedInstanceState == null) handleIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val adapter = nfc
+        state.nfcStatus = when {
+            adapter == null -> NfcStatus.UNSUPPORTED
+            !adapter.isEnabled -> NfcStatus.DISABLED
+            else -> NfcStatus.READY
+        }
+        adapter?.enableReaderMode(
+            this, this,
+            NfcAdapter.FLAG_READER_NFC_F or
+                NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK or
+                NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS,
+            Bundle().apply { putInt(NfcAdapter.EXTRA_READER_PRESENCE_CHECK_DELAY, 1000) },
+        )
+    }
+
+    override fun onPause() {
+        super.onPause()
+        nfc?.disableReaderMode(this)
+    }
+
+    /** 冷启动时由“贴卡自动打开”带进来的卡片。 */
+    private fun handleIntent(intent: Intent?) {
+        if (intent?.action != NfcAdapter.ACTION_TECH_DISCOVERED) return
+        val tag = if (Build.VERSION.SDK_INT >= 33) {
+            intent.getParcelableExtra(NfcAdapter.EXTRA_TAG, Tag::class.java)
+        } else {
+            @Suppress("DEPRECATION") intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
+        } ?: return
+        Thread { onTagDiscovered(tag) }.start()
+    }
+
+    /** NFC 线程回调，可直接做阻塞 IO。 */
+    override fun onTagDiscovered(tag: Tag) {
+        runOnUiThread { state.reading = true; state.error = null }
+        val result = try {
+            Result.success(FelicaReader.read(tag))
+        } catch (e: CardReadException) {
+            Result.failure(e)
+        } catch (e: Exception) {
+            Result.failure(CardReadException("读取失败：${e.message ?: e.javaClass.simpleName}"))
+        }
+        runOnUiThread {
+            state.reading = false
+            result.onSuccess { data ->
+                val card = store.save(data)
+                state.cards = store.all()
+                state.selectedIdm = card.idm
+                haptic(success = true)
+            }.onFailure {
+                state.error = it.message
+                haptic(success = false)
+            }
+        }
+    }
+
+    private fun haptic(success: Boolean) {
+        val view = window.decorView
+        val type = if (Build.VERSION.SDK_INT >= 30) {
+            if (success) HapticFeedbackConstants.CONFIRM else HapticFeedbackConstants.REJECT
+        } else {
+            HapticFeedbackConstants.LONG_PRESS
+        }
+        view.performHapticFeedback(type)
+    }
+}
