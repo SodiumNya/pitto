@@ -28,10 +28,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,7 +38,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -103,14 +99,14 @@ fun HomeScreen(state: AppState, actions: AppActions) {
                                 modifier = Modifier.weight(1f),
                             )
                             Text(
-                                "左滑删除 · 长按更多",
+                                "长按可重命名或删除",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.outline,
                             )
                         }
                     }
                     items(state.cards, key = { it.idm }) { card ->
-                        SwipeableCardRow(
+                        SavedCardRow(
                             card = card,
                             modifier = Modifier.animateItem(),
                             onClick = { actions.openCard(card.idm) },
@@ -163,55 +159,17 @@ private fun HintCard(state: AppState) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun SwipeableCardRow(
+private fun SavedCardRow(
     card: SavedCard,
     modifier: Modifier,
     onClick: () -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    // 需要滑过一半宽度才算删除，避免轻扫误删
-    val dismiss = rememberSwipeToDismissBoxState(positionalThreshold = { it * 0.5f })
-    SwipeToDismissBox(
-        state = dismiss,
-        modifier = modifier,
-        enableDismissFromStartToEnd = false,
-        onDismiss = { if (it == SwipeToDismissBoxValue.EndToStart) onDelete() },
-        backgroundContent = {
-            val active = dismiss.targetValue == SwipeToDismissBoxValue.EndToStart
-            Box(
-                Modifier.fillMaxSize().clip(CardShape).graphicsLayer {
-                    alpha = if (dismiss.dismissDirection == SwipeToDismissBoxValue.EndToStart) 1f else 0f
-                },
-            ) {
-                Surface(
-                    color = if (active) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.errorContainer,
-                    contentColor = if (active) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onErrorContainer,
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    Row(
-                        Modifier.padding(horizontal = 24.dp),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(if (active) "松手删除" else "删除", style = MaterialTheme.typography.labelLarge)
-                        Spacer(Modifier.padding(4.dp))
-                        Icon(Icons.Filled.Delete, null)
-                    }
-                }
-            }
-        },
-    ) {
-        SavedCardRow(card, onClick, onRename, onDelete)
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun SavedCardRow(card: SavedCard, onClick: () -> Unit, onRename: () -> Unit, onDelete: () -> Unit) {
     var menu by remember { mutableStateOf(false) }
-    Box {
+    Box(modifier) {
         Surface(
             color = MaterialTheme.colorScheme.surfaceContainerLow,
             shape = CardShape,

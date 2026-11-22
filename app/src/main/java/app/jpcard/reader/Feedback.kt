@@ -29,9 +29,9 @@ class Feedback(context: Context) {
     }
     private val handler = Handler(Looper.getMainLooper())
 
-    // 成功：上行的两个清脆音（E6 → A6），失败：下行的两个低音
-    private val successPcm by lazy { chime(listOf(1318.5 to 0.075, 1760.0 to 0.16)) }
-    private val failurePcm by lazy { chime(listOf(523.3 to 0.09, 392.0 to 0.16)) }
+    // 成功：上行的两个柔和音（A5 → D6），失败：下行的两个低音
+    private val successPcm by lazy { chime(listOf(880.0 to 0.08, 1174.7 to 0.16)) }
+    private val failurePcm by lazy { chime(listOf(440.0 to 0.09, 349.2 to 0.16)) }
 
     fun success() {
         play(successPcm)
@@ -79,7 +79,7 @@ class Feedback(context: Context) {
     private companion object {
         const val RATE = 44100
 
-        /** 合成几个依次响起的音：带 3ms 起音和指数衰减，外加一点二次谐波让声音更圆润。 */
+        /** 合成几个依次响起的音：纯正弦波（不加谐波，避免尖锐），8ms 柔和起音 + 指数衰减。 */
         fun chime(notes: List<Pair<Double, Double>>): ShortArray {
             val tail = 0.12
             val total = notes.sumOf { it.second } + tail
@@ -90,14 +90,14 @@ class Feedback(context: Context) {
                 val n = ((len + tail) * RATE).toInt()
                 for (i in 0 until min(n, out.size - begin)) {
                     val t = i.toDouble() / RATE
-                    val env = min(1.0, t / 0.003) * exp(-t / (len * 0.55))
-                    val s = sin(2 * PI * freq * t) + 0.25 * sin(4 * PI * freq * t)
+                    val env = min(1.0, t / 0.008) * exp(-t / (len * 0.55))
+                    val s = sin(2 * PI * freq * t)
                     out[begin + i] += (s * env).toFloat()
                 }
                 start += len
             }
             return ShortArray(out.size) { i ->
-                (out[i].coerceIn(-1.25f, 1.25f) * 0.28f * Short.MAX_VALUE).toInt().toShort()
+                (out[i].coerceIn(-1f, 1f) * 0.14f * Short.MAX_VALUE).toInt().toShort()
             }
         }
     }
