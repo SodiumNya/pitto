@@ -12,6 +12,7 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import app.jpcard.reader.data.CardFaces
 import app.jpcard.reader.data.CardStore
 import app.jpcard.reader.data.Stations
 import app.jpcard.reader.nfc.CardReadException
@@ -57,9 +58,22 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
             rename = { idm, name -> store.rename(idm, name); state.cards = store.all() },
             delete = { idm ->
                 store.delete(idm)
+                CardFaces.delete(this, idm)
                 state.cards = store.all()
                 if (state.selectedIdm == idm) state.selectedIdm = null
             },
+            setFace = { idm, uri ->
+                state.faceBusy = true
+                Thread {
+                    val ok = CardFaces.save(applicationContext, idm, uri)
+                    runOnUiThread {
+                        state.faceBusy = false
+                        state.faceVersion++
+                        if (!ok) state.error = "这张图片无法使用，请换一张试试"
+                    }
+                }.start()
+            },
+            clearFace = { idm -> CardFaces.delete(this, idm); state.faceVersion++ },
             dismissError = { state.error = null },
             openNfcSettings = { startActivity(Intent(Settings.ACTION_NFC_SETTINGS)) },
         )

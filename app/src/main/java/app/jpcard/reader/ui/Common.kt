@@ -118,26 +118,6 @@ private fun Ripples(color: Color) {
     }
 }
 
-/** 重命名对话框（首页长按、详情页共用）。 */
-@Composable
-fun RenameDialog(current: String, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
-    var text by remember { mutableStateOf(current) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("卡片名称") },
-        text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it.take(20) },
-                singleLine = true,
-                placeholder = { Text("例如：我的 Suica") },
-            )
-        },
-        confirmButton = { TextButton(onClick = { onConfirm(text.trim()) }) { Text("保存") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
-    )
-}
-
 @Composable
 fun ReadingBar(visible: Boolean) {
     AnimatedVisibility(visible) {

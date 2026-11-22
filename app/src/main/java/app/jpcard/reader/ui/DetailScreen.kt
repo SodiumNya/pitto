@@ -13,6 +13,11 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.graphics.Shadow
+import app.jpcard.reader.data.CardFaces
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -62,7 +67,7 @@ import androidx.compose.ui.graphics.Color
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(card: SavedCard, state: AppState, actions: AppActions) {
-    var renaming by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -73,7 +78,7 @@ fun DetailScreen(card: SavedCard, state: AppState, actions: AppActions) {
                     IconButton(onClick = actions.back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回") }
                 },
                 actions = {
-                    IconButton(onClick = { renaming = true }) { Icon(Icons.Filled.Edit, "重命名") }
+                    IconButton(onClick = { editing = true }) { Icon(Icons.Filled.Edit, "编辑卡片") }
                     IconButton(onClick = { deleting = true }) { Icon(Icons.Filled.Delete, "删除") }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
@@ -114,10 +119,7 @@ fun DetailScreen(card: SavedCard, state: AppState, actions: AppActions) {
         }
     }
 
-    if (renaming) RenameDialog(card.name, onDismiss = { renaming = false }) {
-        actions.rename(card.idm, it)
-        renaming = false
-    }
+    if (editing) EditCardSheet(card, state, actions) { editing = false }
     if (deleting) {
         AlertDialog(
             onDismissRequest = { deleting = false },
@@ -131,7 +133,10 @@ fun DetailScreen(card: SavedCard, state: AppState, actions: AppActions) {
     }
 }
 
-/** 余额卡片。刚读卡成功时：整块轻微弹一下，并短暂显示“✓ 已更新”。 */
+/**
+ * 余额卡片，按真实卡片比例显示。有自定义卡面就用图片，否则用卡种配色。
+ * 刚读卡成功时：整块轻微弹一下，并短暂显示“✓ 已更新”。
+ */
 @Composable
 private fun BalanceHero(card: SavedCard, state: AppState) {
     val scale = remember { Animatable(1f) }
@@ -146,40 +151,55 @@ private fun BalanceHero(card: SavedCard, state: AppState) {
             justUpdated = false
         }
     }
+    val face = rememberCardFace(card.idm, state.faceVersion)
+    val shadow = if (face != null) Shadow(Color.Black.copy(alpha = 0.5f), blurRadius = 8f) else null
 
-    Surface(
-        color = cardColor(card.data.type),
-        contentColor = Color.White,
-        shape = RoundedCornerShape(24.dp),
+    CardFaceBox(
+        type = card.data.type,
+        face = face,
+        shape = RoundedCornerShape(20.dp),
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 8.dp)
-            .graphicsLayer { scaleX = scale.value; scaleY = scale.value },
+            .graphicsLayer { scaleX = scale.value; scaleY = scale.value }
+            .aspectRatio(CardFaces.RATIO),
     ) {
-        Column(Modifier.padding(24.dp)) {
-            Text(card.data.type.label + " · 余额", style = MaterialTheme.typography.labelLarge)
+        CompositionLocalProvider(LocalContentColor provides Color.White) {
             Text(
-                yen(card.data.balance),
-                fontSize = 44.sp,
+                card.data.type.label,
+                style = MaterialTheme.typography.titleMedium.copy(shadow = shadow),
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(vertical = 4.dp),
+                modifier = Modifier.align(Alignment.TopStart).padding(20.dp),
             )
-            AnimatedContent(
-                targetState = justUpdated,
-                transitionSpec = { fadeIn() togetherWith fadeOut() },
-                label = "updated",
-            ) { updated ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (updated) {
-                        Icon(Icons.Filled.CheckCircle, null, Modifier.size(16.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("已更新", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
-                    } else {
-                        Text(
-                            "读取于 " + readTime(card.data.readAt),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.85f),
-                        )
+            Column(Modifier.align(Alignment.BottomStart).padding(20.dp)) {
+                Text("余额", style = MaterialTheme.typography.labelLarge.copy(shadow = shadow))
+                Text(
+                    yen(card.data.balance),
+                    style = MaterialTheme.typography.displaySmall.copy(shadow = shadow),
+                    fontSize = 40.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+                AnimatedContent(
+                    targetState = justUpdated,
+                    transitionSpec = { fadeIn() togetherWith fadeOut() },
+                    label = "updated",
+                ) { updated ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (updated) {
+                            Icon(Icons.Filled.CheckCircle, null, Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                "已更新",
+                                style = MaterialTheme.typography.bodySmall.copy(shadow = shadow),
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        } else {
+                            Text(
+                                "读取于 " + readTime(card.data.readAt),
+                                style = MaterialTheme.typography.bodySmall.copy(shadow = shadow),
+                                color = Color.White.copy(alpha = 0.85f),
+                            )
+                        }
                     }
                 }
             }

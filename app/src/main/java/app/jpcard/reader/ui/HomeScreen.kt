@@ -61,7 +61,7 @@ fun HomeScreen(state: AppState, actions: AppActions) {
                         )
                     }
                     items(state.cards, key = { it.idm }) { card ->
-                        SavedCardRow(card, Modifier.animateItem()) { actions.openCard(card.idm) }
+                        SavedCardRow(card, state.faceVersion, Modifier.animateItem()) { actions.openCard(card.idm) }
                     }
                 }
             }
@@ -101,27 +101,32 @@ private fun HintCard(state: AppState) {
     }
 }
 
-/** 卡种小卡面：代表色 + 卡名。 */
+/** 小卡面：有自定义图片就显示缩略图，否则显示卡种配色 + 卡名。 */
 @Composable
-private fun MiniCard(type: CardType) {
-    Box(
-        Modifier
-            .size(width = 52.dp, height = 34.dp)
-            .background(cardColor(type), RoundedCornerShape(6.dp)),
-        contentAlignment = Alignment.Center,
+private fun MiniCard(card: SavedCard, faceVersion: Int) {
+    val face = rememberCardFace(card.idm, faceVersion)
+    CardFaceBox(
+        type = card.data.type,
+        face = face,
+        shape = RoundedCornerShape(6.dp),
+        scrim = false,
+        modifier = Modifier.size(width = 54.dp, height = 34.dp),
     ) {
-        Text(
-            type.label,
-            color = Color.White,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-        )
+        if (face == null) {
+            Text(
+                card.data.type.label,
+                color = Color.White,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                modifier = Modifier.align(Alignment.Center),
+            )
+        }
     }
 }
 
 @Composable
-private fun SavedCardRow(card: SavedCard, modifier: Modifier, onClick: () -> Unit) {
+private fun SavedCardRow(card: SavedCard, faceVersion: Int, modifier: Modifier, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -129,7 +134,7 @@ private fun SavedCardRow(card: SavedCard, modifier: Modifier, onClick: () -> Uni
         modifier = modifier.fillMaxWidth(),
     ) {
         Row(Modifier.padding(horizontal = 16.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-            MiniCard(card.data.type)
+            MiniCard(card, faceVersion)
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 Text(card.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
