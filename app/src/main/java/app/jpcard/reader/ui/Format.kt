@@ -49,5 +49,13 @@ fun entryDetail(e: HistoryEntry): String? = when (e.kind) {
             "$from → " + stationName(e.outArea, e.outLine, e.outStation)
         }
     }
+    // 巴士记录：第 6-7 字节是巴士公司代码，第 8-9 字节是站点码（只有一个站点，没有区间）
+    HistoryEntry.Kind.BUS -> {
+        val operator = (e.inLine shl 8) or e.inStation
+        val stop = (e.outLine shl 8) or e.outStation
+        listOfNotNull(Stations.busCompany(operator), Stations.busStop(operator, stop))
+            .joinToString(" · ")
+            .ifEmpty { null }
+    }
     else -> null
 }

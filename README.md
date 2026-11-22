@@ -27,7 +27,7 @@
 
 ## 站名数据
 
-`app/src/main/assets/stations.tsv` 由 `tools/gen_stations.py` 生成，数据来自
+`app/src/main/assets/stations.tsv`（铁路）和 `bus.tsv`（巴士）由 `tools/gen_stations.py` 生成，数据来自
 [Metrodroid](https://github.com/metrodroid/metrodroid) 的 `data/felica_stations.db3`（GPL-3.0-or-later，
 最初源自 FareBot 与 IC SFCard Fan 的站码表）。自用没有问题；如果要公开发布这个 app，需要遵守 GPL-3.0（公开源码并采用同一许可证）。
 
