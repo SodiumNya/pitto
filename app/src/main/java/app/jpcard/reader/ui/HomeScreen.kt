@@ -1,35 +1,80 @@
 package app.jpcard.reader.ui
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.jpcard.reader.data.SavedCard
+import kotlinx.coroutines.launch
+
+private val CardShape = RoundedCornerShape(20.dp)
 
 @Composable
 fun HomeScreen(state: AppState, actions: AppActions) {
-    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing)) {
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    var renaming by remember { mutableStateOf<SavedCard?>(null) }
+
+    // 删除后给 5 秒撤销机会，比确认弹窗更不打断操作，也能防误触
+    val deleteWithUndo: (SavedCard) -> Unit = { card ->
+        actions.delete(card.idm)
+        scope.launch {
+            snackbar.currentSnackbarData?.dismiss()
+            val r = snackbar.showSnackbar(
+                message = "已删除「${card.name}」",
+                actionLabel = "撤销",
+                duration = SnackbarDuration.Long,
+            )
+            if (r == SnackbarResult.ActionPerformed) actions.restore(card)
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbar) },
+        containerColor = MaterialTheme.colorScheme.background,
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding)) {
             ReadingBar(state.reading)
             LazyColumn(
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
@@ -44,29 +89,53 @@ fun HomeScreen(state: AppState, actions: AppActions) {
                     )
                 }
                 item { StatusBanners(state, actions) }
-                item { HintCard(state.reading) }
+                item { HintCard(state) }
                 if (state.cards.isNotEmpty()) {
                     item {
-                        Text(
-                            "我的卡片",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 12.dp, start = 4.dp),
-                        )
+                        Row(
+                            Modifier.fillMaxWidth().padding(top = 12.dp, start = 4.dp, end = 4.dp),
+                            verticalAlignment = Alignment.Bottom,
+                        ) {
+                            Text(
+                                "我的卡片",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Text(
+                                "左滑删除 · 长按更多",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline,
+                            )
+                        }
                     }
                     items(state.cards, key = { it.idm }) { card ->
-                        SavedCardRow(card) { actions.openCard(card.idm) }
+                        SwipeableCardRow(
+                            card = card,
+                            modifier = Modifier.animateItem(),
+                            onClick = { actions.openCard(card.idm) },
+                            onRename = { renaming = card },
+                            onDelete = { deleteWithUndo(card) },
+                        )
                     }
                 }
             }
         }
     }
+
+    renaming?.let { card ->
+        RenameDialog(card.name, onDismiss = { renaming = null }) {
+            actions.rename(card.idm, it)
+            renaming = null
+        }
+    }
 }
 
 @Composable
-private fun HintCard(reading: Boolean) {
+private fun HintCard(state: AppState) {
+    val enabled = state.nfcStatus == NfcStatus.READY
     Surface(
-        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = if (enabled) 0.5f else 0.2f),
         shape = RoundedCornerShape(24.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -74,15 +143,19 @@ private fun HintCard(reading: Boolean) {
             Modifier.padding(vertical = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            TapHint()
+            TapHint(reading = state.reading, enabled = enabled, errorTick = state.errorTick)
             Spacer(Modifier.height(12.dp))
             Text(
-                if (reading) "正在读取，请不要移开…" else "把 Suica / ICOCA 贴在手机背面",
+                when {
+                    !enabled -> "NFC 未开启，暂时无法读卡"
+                    state.reading -> "正在读取，请不要移开…"
+                    else -> "把 Suica / ICOCA 贴在手机背面"
+                },
                 style = MaterialTheme.typography.titleMedium,
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                "一般在摄像头附近，贴住 1 秒",
+                if (enabled) "一般在摄像头附近，贴住 1 秒" else "开启 NFC 后即可使用",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -91,22 +164,85 @@ private fun HintCard(reading: Boolean) {
 }
 
 @Composable
-private fun SavedCardRow(card: SavedCard, onClick: () -> Unit) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = RoundedCornerShape(20.dp),
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-    ) {
-        Row(Modifier.padding(horizontal = 20.dp, vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(card.name, style = MaterialTheme.typography.titleMedium)
-                Text(
-                    "上次读取 " + readTime(card.data.readAt),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+private fun SwipeableCardRow(
+    card: SavedCard,
+    modifier: Modifier,
+    onClick: () -> Unit,
+    onRename: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    // 需要滑过一半宽度才算删除，避免轻扫误删
+    val dismiss = rememberSwipeToDismissBoxState(positionalThreshold = { it * 0.5f })
+    SwipeToDismissBox(
+        state = dismiss,
+        modifier = modifier,
+        enableDismissFromStartToEnd = false,
+        onDismiss = { if (it == SwipeToDismissBoxValue.EndToStart) onDelete() },
+        backgroundContent = {
+            val active = dismiss.targetValue == SwipeToDismissBoxValue.EndToStart
+            Box(
+                Modifier.fillMaxSize().clip(CardShape).graphicsLayer {
+                    alpha = if (dismiss.dismissDirection == SwipeToDismissBoxValue.EndToStart) 1f else 0f
+                },
+            ) {
+                Surface(
+                    color = if (active) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.errorContainer,
+                    contentColor = if (active) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 24.dp),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(if (active) "松手删除" else "删除", style = MaterialTheme.typography.labelLarge)
+                        Spacer(Modifier.padding(4.dp))
+                        Icon(Icons.Filled.Delete, null)
+                    }
+                }
             }
-            Text(yen(card.data.balance), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+        },
+    ) {
+        SavedCardRow(card, onClick, onRename, onDelete)
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun SavedCardRow(card: SavedCard, onClick: () -> Unit, onRename: () -> Unit, onDelete: () -> Unit) {
+    var menu by remember { mutableStateOf(false) }
+    Box {
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            shape = CardShape,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(CardShape)
+                .combinedClickable(onClick = onClick, onLongClick = { menu = true }),
+        ) {
+            Row(Modifier.padding(horizontal = 20.dp, vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(card.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        "上次读取 " + readTime(card.data.readAt),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Text(yen(card.data.balance), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+            }
+        }
+        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+            DropdownMenuItem(
+                text = { Text("重命名") },
+                leadingIcon = { Icon(Icons.Filled.Edit, null) },
+                onClick = { menu = false; onRename() },
+            )
+            DropdownMenuItem(
+                text = { Text("删除", color = MaterialTheme.colorScheme.error) },
+                leadingIcon = { Icon(Icons.Filled.Delete, null, tint = MaterialTheme.colorScheme.error) },
+                onClick = { menu = false; onDelete() },
+            )
         }
     }
 }

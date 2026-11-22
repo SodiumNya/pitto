@@ -1,12 +1,14 @@
 package app.jpcard.reader
 
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.nfc.NfcAdapter
 import android.nfc.Tag
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.view.HapticFeedbackConstants
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -24,12 +26,21 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
 
     private var nfc: NfcAdapter? = null
     private lateinit var store: CardStore
+    private lateinit var feedback: Feedback
     private val state = AppState()
+
+    /** 系统在 NFC 开关变化时发广播，只在前台时注册，不轮询、不耗电。 */
+    private val nfcStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            refreshNfc()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         store = CardStore(this)
+        feedback = Feedback(this)
         nfc = NfcAdapter.getDefaultAdapter(this)
         state.cards = store.all()
         state.stationsReady = Stations.loaded
@@ -47,8 +58,9 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
             delete = { idm ->
                 store.delete(idm)
                 state.cards = store.all()
-                state.selectedIdm = null
+                if (state.selectedIdm == idm) state.selectedIdm = null
             },
+            restore = { card -> store.restore(card); state.cards = store.all() },
             dismissError = { state.error = null },
             openNfcSettings = { startActivity(Intent(Settings.ACTION_NFC_SETTINGS)) },
         )
@@ -64,24 +76,41 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
 
     override fun onResume() {
         super.onResume()
-        val adapter = nfc
-        state.nfcStatus = when {
-            adapter == null -> NfcStatus.UNSUPPORTED
-            !adapter.isEnabled -> NfcStatus.DISABLED
-            else -> NfcStatus.READY
+        val filter = IntentFilter(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED)
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(nfcStateReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(nfcStateReceiver, filter)
         }
-        adapter?.enableReaderMode(
-            this, this,
-            NfcAdapter.FLAG_READER_NFC_F or
-                NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK or
-                NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS,
-            Bundle().apply { putInt(NfcAdapter.EXTRA_READER_PRESENCE_CHECK_DELAY, 1000) },
-        )
+        refreshNfc()
     }
 
     override fun onPause() {
         super.onPause()
+        unregisterReceiver(nfcStateReceiver)
         nfc?.disableReaderMode(this)
+    }
+
+    private fun refreshNfc() {
+        val adapter = nfc
+        val status = when {
+            adapter == null -> NfcStatus.UNSUPPORTED
+            !adapter.isEnabled -> NfcStatus.DISABLED
+            else -> NfcStatus.READY
+        }
+        state.nfcStatus = status
+        if (status == NfcStatus.READY) {
+            // NFC 重新打开后需要重新进入读卡模式
+            adapter?.enableReaderMode(
+                this, this,
+                NfcAdapter.FLAG_READER_NFC_F or
+                    NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK or
+                    NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS,
+                Bundle().apply { putInt(NfcAdapter.EXTRA_READER_PRESENCE_CHECK_DELAY, 1000) },
+            )
+        } else {
+            state.reading = false
+        }
     }
 
     /** 冷启动时由“贴卡自动打开”带进来的卡片。 */
@@ -111,21 +140,13 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
                 val card = store.save(data)
                 state.cards = store.all()
                 state.selectedIdm = card.idm
-                haptic(success = true)
+                state.celebrate(card.idm)
+                feedback.success()
             }.onFailure {
                 state.error = it.message
-                haptic(success = false)
+                state.errorTick++
+                feedback.failure()
             }
         }
-    }
-
-    private fun haptic(success: Boolean) {
-        val view = window.decorView
-        val type = if (Build.VERSION.SDK_INT >= 30) {
-            if (success) HapticFeedbackConstants.CONFIRM else HapticFeedbackConstants.REJECT
-        } else {
-            HapticFeedbackConstants.LONG_PRESS
-        }
-        view.performHapticFeedback(type)
     }
 }

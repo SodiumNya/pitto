@@ -43,6 +43,11 @@ class CardStore(context: Context) {
         write(all().filterNot { it.idm == idm })
     }
 
+    /** 撤销删除：原样放回（列表按读取时间排序，位置自然复原）。 */
+    fun restore(card: SavedCard) {
+        write(all().filterNot { it.idm == card.idm } + card)
+    }
+
     private fun write(cards: List<SavedCard>) {
         val arr = JSONArray()
         cards.forEach { arr.put(toJson(it)) }

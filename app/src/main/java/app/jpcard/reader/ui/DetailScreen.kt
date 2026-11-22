@@ -1,5 +1,18 @@
 package app.jpcard.reader.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -70,7 +83,7 @@ fun DetailScreen(card: SavedCard, state: AppState, actions: AppActions) {
             ReadingBar(state.reading)
             LazyColumn(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)) {
                 item { StatusBanners(state, actions) }
-                item { BalanceHero(card) }
+                item { BalanceHero(card, state) }
                 item {
                     Text(
                         "最近记录（卡内最多保存 20 条）",
@@ -116,13 +129,30 @@ fun DetailScreen(card: SavedCard, state: AppState, actions: AppActions) {
     }
 }
 
+/** 余额卡片。刚读卡成功时：整块轻微弹一下，并短暂显示“✓ 已更新”。 */
 @Composable
-private fun BalanceHero(card: SavedCard) {
+private fun BalanceHero(card: SavedCard, state: AppState) {
+    val scale = remember { Animatable(1f) }
+    var justUpdated by remember { mutableStateOf(false) }
+    LaunchedEffect(state.readTick) {
+        if (state.readTick > state.consumedTick && state.readIdm == card.idm) {
+            state.consumedTick = state.readTick
+            justUpdated = true
+            scale.snapTo(0.94f)
+            scale.animateTo(1f, spring(dampingRatio = 0.45f, stiffness = Spring.StiffnessMediumLow))
+            delay(2200)
+            justUpdated = false
+        }
+    }
+
     Surface(
         color = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.onPrimary,
         shape = RoundedCornerShape(24.dp),
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+            .graphicsLayer { scaleX = scale.value; scaleY = scale.value },
     ) {
         Column(Modifier.padding(24.dp)) {
             Text("余额", style = MaterialTheme.typography.labelLarge)
@@ -132,11 +162,25 @@ private fun BalanceHero(card: SavedCard) {
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(vertical = 4.dp),
             )
-            Text(
-                "读取于 " + readTime(card.data.readAt),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
-            )
+            AnimatedContent(
+                targetState = justUpdated,
+                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                label = "updated",
+            ) { updated ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (updated) {
+                        Icon(Icons.Filled.CheckCircle, null, Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("已更新", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                    } else {
+                        Text(
+                            "读取于 " + readTime(card.data.readAt),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -173,21 +217,3 @@ private fun HistoryRow(e: HistoryEntry, stationsReady: Boolean) {
     }
 }
 
-@Composable
-private fun RenameDialog(current: String, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
-    var text by remember { mutableStateOf(current) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("卡片名称") },
-        text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it.take(20) },
-                singleLine = true,
-                placeholder = { Text("例如：我的 Suica") },
-            )
-        },
-        confirmButton = { TextButton(onClick = { onConfirm(text.trim()) }) { Text("保存") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
-    )
-}
