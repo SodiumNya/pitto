@@ -1,12 +1,15 @@
 package app.jpcard.reader.nfc
 
+import androidx.annotation.StringRes
+import app.jpcard.reader.R
+
 import android.nfc.Tag
 import android.nfc.TagLostException
 import android.nfc.tech.NfcF
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 
-class CardReadException(message: String) : IOException(message)
+class CardReadException(@StringRes val reason: Int) : IOException()
 
 private class FelicaStatusException(val status1: Int, val status2: Int) :
     IOException("FeliCa status %02X %02X".format(status1, status2))
@@ -23,11 +26,11 @@ object FelicaReader {
     private const val BLOCK_SIZE = 16
 
     fun read(tag: Tag): CardData {
-        val nfcF = NfcF.get(tag) ?: throw CardReadException("无法识别这张卡，请使用交通系 IC 卡")
+        val nfcF = NfcF.get(tag) ?: throw CardReadException(R.string.err_not_felica)
         try {
             nfcF.connect()
             nfcF.timeout = 1500
-            val idm = poll(nfcF, SYSTEM_CJRC) ?: throw CardReadException("这张卡不是交通系 IC 卡")
+            val idm = poll(nfcF, SYSTEM_CJRC) ?: throw CardReadException(R.string.err_not_transit)
             val type = try {
                 detectType(nfcF, idm)
             } catch (e: TagLostException) {
@@ -45,11 +48,11 @@ object FelicaReader {
             }
             return CardParser.parse(idm, type, history, attribute)
         } catch (e: TagLostException) {
-            throw CardReadException("读取中断，请将卡片贴稳后重试")
+            throw CardReadException(R.string.err_tag_lost)
         } catch (e: CardReadException) {
             throw e
         } catch (e: IOException) {
-            throw CardReadException("读取失败，请将卡片贴稳后重试")
+            throw CardReadException(R.string.err_read_failed)
         } finally {
             runCatching { nfcF.close() }
         }
@@ -137,12 +140,12 @@ object FelicaReader {
         cmd[0] = cmd.size.toByte()
 
         val res = f.transceive(cmd)
-        if (res.size < 12 || res[1] != 0x07.toByte()) throw IOException("响应格式异常")
+        if (res.size < 12 || res[1] != 0x07.toByte()) throw IOException("unexpected response")
         val s1 = res[10].toInt() and 0xFF
         val s2 = res[11].toInt() and 0xFF
         if (s1 != 0) throw FelicaStatusException(s1, s2)
         val num = res[12].toInt() and 0xFF
-        if (res.size < 13 + num * BLOCK_SIZE) throw IOException("响应长度异常")
+        if (res.size < 13 + num * BLOCK_SIZE) throw IOException("short response")
         return List(num) { i -> res.copyOfRange(13 + i * BLOCK_SIZE, 13 + (i + 1) * BLOCK_SIZE) }
     }
 }

@@ -86,7 +86,7 @@ class CardStore(context: Context) {
         /** 默认名（含旧版本的“交通卡 · XXXX”“Suica · XXXX”）都视为用户没改过。 */
         private fun isDefaultName(name: String, idm: String): Boolean {
             val tail = " · ${idm.takeLast(4)}"
-            return name == "交通卡$tail" ||
+            return name == "交通卡$tail" || name.startsWith("交通系IC") ||
                 CardType.entries.any { name == it.label + tail || isSchemeName(name, it) }
         }
 

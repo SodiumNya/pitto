@@ -1,5 +1,8 @@
 package app.jpcard.reader.nfc
 
+import android.content.Context
+import app.jpcard.reader.R
+
 /**
  * 交通系 IC 卡种类。
  *
@@ -18,7 +21,7 @@ enum class CardType(val label: String, val probes: IntArray) {
     PITAPA("PiTaPa", intArrayOf(0x1B88, 0x9748)),
     SUGOCA("SUGOCA", intArrayOf(0x21C8, 0x2208)),
     HAYAKAKEN("はやかけん", intArrayOf(0x2448, 0x2508)),
-    UNKNOWN("交通系IC", intArrayOf());
+    UNKNOWN("IC", intArrayOf());
 
     companion object {
         val detectable = entries.filter { it.probes.isNotEmpty() }
@@ -39,4 +42,8 @@ enum class CardType(val label: String, val probes: IntArray) {
 
         fun fromName(name: String?): CardType = entries.find { it.name == name } ?: UNKNOWN
     }
+
+    /** 显示名：卡名是专有名词不翻译，只有“未知卡种”按语言显示。 */
+    fun displayName(context: Context): String =
+        if (this == UNKNOWN) context.getString(R.string.card_type_unknown) else label
 }

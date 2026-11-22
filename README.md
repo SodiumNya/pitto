@@ -27,6 +27,12 @@
 - `data/CardFaces.kt`：自定义卡面
 - `ui/`：Compose 界面
 
+## 多语言
+
+界面支持英语（默认/兜底）、简体中文、繁体中文、日语、韩语，跟随系统语言；
+Android 13+ 可在系统设置里单独给 Pitto 选语言。文字在 `app/src/main/res/values*/strings.xml`。
+站名、巴士公司名保留日文原名；Suica 等卡名为专有名词不翻译。
+
 ## 签名
 
 debug 和 release 都用正式密钥签名（两者可以互相覆盖安装）：

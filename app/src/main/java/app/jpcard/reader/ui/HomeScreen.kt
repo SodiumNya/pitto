@@ -23,8 +23,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import app.jpcard.reader.R
+import androidx.compose.ui.res.stringResource
 import app.jpcard.reader.data.SavedCard
 import app.jpcard.reader.nfc.CardType
 import app.jpcard.reader.ui.theme.cardColor
@@ -57,7 +60,7 @@ fun HomeScreen(state: AppState, actions: AppActions) {
                 if (state.cards.isNotEmpty()) {
                     item {
                         Text(
-                            "我的卡片",
+                            stringResource(R.string.my_cards),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 12.dp, start = 4.dp),
@@ -82,34 +85,36 @@ private fun HintCard(state: AppState, actions: AppActions) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
-            Modifier.padding(vertical = 28.dp),
+            Modifier.padding(vertical = 28.dp, horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             TapHint(reading = state.reading, enabled = enabled, errorTick = state.errorTick)
             Spacer(Modifier.height(12.dp))
             Text(
                 when {
-                    state.nfcStatus == NfcStatus.UNSUPPORTED -> "此设备不支持 NFC"
-                    !enabled -> "NFC 已关闭"
-                    state.reading -> "正在读取，请勿移开卡片"
-                    state.cards.isEmpty() -> "将交通卡贴近手机背面以添加卡片"
-                    else -> "将交通卡贴近手机背面以添加或更新"
+                    state.nfcStatus == NfcStatus.UNSUPPORTED -> stringResource(R.string.nfc_unsupported_title)
+                    !enabled -> stringResource(R.string.nfc_off)
+                    state.reading -> stringResource(R.string.home_reading)
+                    state.cards.isEmpty() -> stringResource(R.string.home_hint_add)
+                    else -> stringResource(R.string.home_hint_add_or_update)
                 },
                 style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(4.dp))
             Text(
                 when {
-                    state.nfcStatus == NfcStatus.UNSUPPORTED -> "无法读取交通卡"
-                    !enabled -> "开启 NFC 后即可读卡"
-                    else -> "支持 Suica、ICOCA、PASMO 等交通系 IC 卡"
+                    state.nfcStatus == NfcStatus.UNSUPPORTED -> stringResource(R.string.home_sub_unsupported)
+                    !enabled -> stringResource(R.string.home_sub_nfc_off)
+                    else -> stringResource(R.string.home_sub_supported)
                 },
                 style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (state.nfcStatus == NfcStatus.DISABLED) {
                 Spacer(Modifier.height(8.dp))
-                FilledTonalButton(onClick = actions.openNfcSettings) { Text("开启 NFC") }
+                FilledTonalButton(onClick = actions.openNfcSettings) { Text(stringResource(R.string.turn_on_nfc)) }
             }
         }
     }
@@ -128,7 +133,7 @@ private fun MiniCard(card: SavedCard, faceVersion: Int) {
     ) {
         if (face == null) {
             Text(
-                card.data.type.label,
+                card.data.type.displayName(LocalContext.current),
                 color = Color.White,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
@@ -153,7 +158,7 @@ private fun SavedCardRow(card: SavedCard, faceVersion: Int, modifier: Modifier, 
             Column(Modifier.weight(1f)) {
                 Text(card.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
-                    "更新于 " + readTime(card.data.readAt),
+                    stringResource(R.string.updated_at, readTime(card.data.readAt)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -180,7 +185,7 @@ private fun AboutFooter() {
             color = MaterialTheme.colorScheme.outline,
         )
         Text(
-            "站名数据来自 Metrodroid（GPL-3.0）",
+            stringResource(R.string.footer_data),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.outline,
         )

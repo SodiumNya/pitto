@@ -33,6 +33,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.jpcard.reader.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import app.jpcard.reader.data.CardFaces
 import app.jpcard.reader.data.SavedCard
 
@@ -57,7 +60,7 @@ fun EditCardSheet(card: SavedCard, state: AppState, actions: AppActions, onDismi
             Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text("编辑卡片", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.edit_card), style = MaterialTheme.typography.titleLarge)
 
             CardFaceBox(
                 type = card.data.type,
@@ -68,7 +71,7 @@ fun EditCardSheet(card: SavedCard, state: AppState, actions: AppActions, onDismi
             ) {
                 if (face == null) {
                     Text(
-                        card.data.type.label,
+                        card.data.type.displayName(LocalContext.current),
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.align(Alignment.Center),
@@ -86,15 +89,15 @@ fun EditCardSheet(card: SavedCard, state: AppState, actions: AppActions, onDismi
                 FilledTonalButton(
                     enabled = !state.faceBusy,
                     onClick = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
-                ) { Text(if (face == null) "选择卡面图片" else "更换图片") }
+                ) { Text(stringResource(if (face == null) R.string.choose_face else R.string.change_face)) }
                 if (face != null) {
                     TextButton(enabled = !state.faceBusy, onClick = { actions.clearFace(card.idm) }) {
-                        Text("恢复默认")
+                        Text(stringResource(R.string.restore_default))
                     }
                 }
             }
             Text(
-                "选择图片后可调整位置和方向，图片仅保存在本机。",
+                stringResource(R.string.face_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -103,14 +106,14 @@ fun EditCardSheet(card: SavedCard, state: AppState, actions: AppActions, onDismi
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it.take(20) },
-                label = { Text("名称") },
-                placeholder = { Text(card.data.type.label) },
+                label = { Text(stringResource(R.string.name)) },
+                placeholder = { Text(card.data.type.displayName(LocalContext.current)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
 
             Spacer(Modifier.height(4.dp))
-            Button(onClick = close, modifier = Modifier.fillMaxWidth()) { Text("完成") }
+            Button(onClick = close, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.done)) }
         }
     }
 }

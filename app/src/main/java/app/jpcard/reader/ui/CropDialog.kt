@@ -43,6 +43,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import app.jpcard.reader.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import app.jpcard.reader.data.CardFaces
@@ -68,7 +70,7 @@ fun CropDialog(source: Bitmap, onCancel: () -> Unit, onConfirm: (Bitmap, android
     Dialog(onDismissRequest = onCancel, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Column(Modifier.fillMaxSize().background(Color.Black).windowInsetsPadding(WindowInsets.safeDrawing)) {
             Text(
-                "拖动或双指缩放以调整位置",
+                stringResource(R.string.crop_hint),
                 color = Color.White.copy(alpha = 0.8f),
                 modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 20.dp),
             )
@@ -119,15 +121,15 @@ fun CropDialog(source: Bitmap, onCancel: () -> Unit, onConfirm: (Bitmap, android
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                TextButton(onClick = onCancel) { Text("取消", color = Color.White) }
+                TextButton(onClick = onCancel) { Text(stringResource(R.string.cancel), color = Color.White) }
                 TextButton(onClick = { bitmap = CardFaces.rotate90(bitmap) }) {
                     Icon(Icons.Filled.Refresh, null, tint = Color.White)
-                    Text("  旋转", color = Color.White)
+                    Text("  " + stringResource(R.string.rotate), color = Color.White)
                 }
                 Button(
                     enabled = area != Size.Zero,
                     onClick = { onConfirm(bitmap, geo.cropRect(offset, zoom)) },
-                ) { Text("确定") }
+                ) { Text(stringResource(R.string.ok)) }
             }
         }
     }

@@ -71,7 +71,7 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
                     runOnUiThread {
                         state.faceBusy = false
                         if (bmp == null) {
-                            state.error = "无法读取这张图片，请换一张"
+                            state.error = R.string.err_image
                         } else {
                             state.crop = CropRequest(idm, bmp)
                         }
@@ -88,7 +88,7 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
                         runOnUiThread {
                             state.faceBusy = false
                             state.faceVersion++
-                            if (!ok) state.error = "卡面保存失败，请重试"
+                            if (!ok) state.error = R.string.err_face_save
                         }
                     }.start()
                 }
@@ -166,7 +166,7 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
         } catch (e: CardReadException) {
             Result.failure(e)
         } catch (e: Exception) {
-            Result.failure(CardReadException("读取失败，请将卡片贴稳后重试"))
+            Result.failure(CardReadException(R.string.err_read_failed))
         }
         runOnUiThread {
             state.reading = false
@@ -177,7 +177,7 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
                 state.celebrate(card.idm)
                 feedback.success()
             }.onFailure {
-                state.error = it.message
+                state.error = (it as? CardReadException)?.reason ?: R.string.err_read_failed
                 state.errorTick++
                 feedback.failure()
             }

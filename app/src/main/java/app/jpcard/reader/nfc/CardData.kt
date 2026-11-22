@@ -1,5 +1,8 @@
 package app.jpcard.reader.nfc
 
+import androidx.annotation.StringRes
+import app.jpcard.reader.R
+
 /** 一次读卡的结果。 */
 data class CardData(
     val idm: String,
@@ -38,13 +41,13 @@ data class HistoryEntry(
     /**
      * 记录类别，用于在列表里用颜色区分。
      * OTHER 是兜底：没被归类的处理种类都落在这里。
-     * 想从 OTHER 里拆出新类别时：这里加一项 → CardParser.kindOf 加一条规则 → theme 里 kindColor 加一种颜色。
+     * 想从 OTHER 里拆出新类别时：这里加一项（及各语言的 kind_/badge_ 文字）→ CardParser.kindOf 加一条规则 → theme 里 kindColor 加一种颜色。
      */
-    enum class Kind(val label: String) {
-        TRAIN("乘车"),
-        BUS("巴士"),
-        SHOPPING("购物"),
-        CHARGE("充值"),
-        OTHER("其他"),
+    enum class Kind(@StringRes val label: Int, @StringRes val badge: Int) {
+        TRAIN(R.string.kind_train, R.string.badge_train),
+        BUS(R.string.kind_bus, R.string.badge_bus),
+        SHOPPING(R.string.kind_shopping, R.string.badge_shopping),
+        CHARGE(R.string.kind_charge, R.string.badge_charge),
+        OTHER(R.string.kind_other, R.string.badge_other),
     }
 }

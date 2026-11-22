@@ -1,5 +1,10 @@
 package app.jpcard.reader.ui
 
+import android.text.format.DateFormat
+import androidx.annotation.StringRes
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import app.jpcard.reader.R
 import app.jpcard.reader.data.Stations
 import app.jpcard.reader.nfc.CardParser
 import app.jpcard.reader.nfc.HistoryEntry
@@ -16,25 +21,36 @@ fun signedYen(amount: Int): String = when {
     else -> yen(0)
 }
 
+/** 按当前语言习惯格式化，例如 “11/22 14:30”“Nov 22 14:30”“11月22日 14:30”。 */
+private fun localized(skeleton: String, time: Date): String {
+    val locale = Locale.getDefault()
+    return SimpleDateFormat(DateFormat.getBestDateTimePattern(locale, skeleton), locale).format(time)
+}
+
+/** 读取时间：今天只显示“今天 14:30”，今年显示月日，往年带年份。 */
+@Composable
 fun readTime(millis: Long): String {
     val now = Calendar.getInstance()
     val then = Calendar.getInstance().apply { timeInMillis = millis }
-    val pattern = when {
-        now.get(Calendar.YEAR) != then.get(Calendar.YEAR) -> "yyyy/MM/dd HH:mm"
-        now.get(Calendar.DAY_OF_YEAR) != then.get(Calendar.DAY_OF_YEAR) -> "MM/dd HH:mm"
-        else -> "今天 HH:mm"
+    val time = Date(millis)
+    return when {
+        now.get(Calendar.YEAR) != then.get(Calendar.YEAR) -> localized("yMdHm", time)
+        now.get(Calendar.DAY_OF_YEAR) != then.get(Calendar.DAY_OF_YEAR) -> localized("MdHm", time)
+        else -> stringResource(R.string.today_at, localized("Hm", time))
     }
-    return SimpleDateFormat(pattern, Locale.getDefault()).format(Date(millis))
 }
 
 fun entryDate(e: HistoryEntry): String {
-    val year = Calendar.getInstance().get(Calendar.YEAR)
-    val date = if (e.year == year) "%d/%d".format(e.month, e.day)
-    else "%d/%d/%d".format(e.year, e.month, e.day)
-    return if (e.hour >= 0) "%s %02d:%02d".format(date, e.hour, e.minute) else date
+    val cal = Calendar.getInstance()
+    val thisYear = cal.get(Calendar.YEAR)
+    cal.clear()
+    cal.set(e.year, e.month - 1, e.day, e.hour.coerceAtLeast(0), e.minute.coerceAtLeast(0))
+    val date = if (e.year == thisYear) "Md" else "yMd"
+    return localized(if (e.hour >= 0) date + "Hm" else date, cal.time)
 }
 
-fun entryTitle(e: HistoryEntry): String = CardParser.processLabel(e.process)
+@StringRes
+fun entryTitle(e: HistoryEntry): Int = CardParser.processLabel(e.process)
 
 /** 查不到站名时退回显示 线区-站 编号。 */
 private fun stationName(area: Int, line: Int, station: Int): String =

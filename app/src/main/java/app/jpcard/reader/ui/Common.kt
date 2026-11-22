@@ -47,6 +47,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import app.jpcard.reader.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
@@ -179,7 +181,7 @@ fun Banner(
                 TextButton(onClick = onAction) { Text(actionLabel) }
             }
             if (onClose != null) {
-                IconButton(onClick = onClose) { Icon(Icons.Filled.Close, "关闭", Modifier.size(18.dp)) }
+                IconButton(onClick = onClose) { Icon(Icons.Filled.Close, stringResource(R.string.close), Modifier.size(18.dp)) }
             }
         }
     }
@@ -191,11 +193,11 @@ fun StatusBanners(state: AppState, actions: AppActions, showNfc: Boolean = true)
         // 主页的提示卡已经说明了 NFC 状态，避免重复
         if (showNfc) {
             when (state.nfcStatus) {
-                NfcStatus.DISABLED -> Banner("NFC 已关闭", "去开启", actions.openNfcSettings)
-                NfcStatus.UNSUPPORTED -> Banner("此设备不支持 NFC，无法读卡")
+                NfcStatus.DISABLED -> Banner(stringResource(R.string.nfc_off), stringResource(R.string.action_turn_on), actions.openNfcSettings)
+                NfcStatus.UNSUPPORTED -> Banner(stringResource(R.string.banner_unsupported))
                 NfcStatus.READY -> Unit
             }
         }
-        state.error?.let { Banner(it, onClose = actions.dismissError) }
+        state.error?.let { Banner(stringResource(it), onClose = actions.dismissError) }
     }
 }

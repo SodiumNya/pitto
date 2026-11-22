@@ -17,7 +17,8 @@ class AppState {
     var cards by mutableStateOf<List<SavedCard>>(emptyList())
     var selectedIdm by mutableStateOf<String?>(null)
     var reading by mutableStateOf(false)
-    var error by mutableStateOf<String?>(null)
+    /** 错误提示的文字资源 id */
+    var error by mutableStateOf<Int?>(null)
     var nfcStatus by mutableStateOf(NfcStatus.READY)
     /** 站名表加载完成后置 true，触发界面刷新 */
     var stationsReady by mutableStateOf(false)

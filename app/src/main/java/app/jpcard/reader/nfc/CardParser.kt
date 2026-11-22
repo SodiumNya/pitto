@@ -1,5 +1,8 @@
 package app.jpcard.reader.nfc
 
+import androidx.annotation.StringRes
+import app.jpcard.reader.R
+
 import app.jpcard.reader.nfc.HistoryEntry.Kind
 
 /**
@@ -75,34 +78,35 @@ object CardParser {
         else -> Kind.OTHER
     }
 
-    fun processLabel(process: Int): String = PROCESS[process] ?: PROCESS[process and 0x7F] ?: "其他"
+    @StringRes
+    fun processLabel(process: Int): Int = PROCESS[process] ?: PROCESS[process and 0x7F] ?: R.string.proc_other
 
     private val PROCESS = mapOf(
-        0x01 to "乘车",
-        0x02 to "充值",
-        0x03 to "购票",
-        0x04 to "补票",
-        0x05 to "进站补票",
-        0x06 to "窗口处理",
-        0x07 to "新卡",
-        0x08 to "扣除",
-        0x0D to "巴士",
-        0x0F to "巴士",
-        0x11 to "补发卡",
-        0x13 to "新干线",
-        0x14 to "自动充值",
-        0x15 to "自动充值",
-        0x1F to "巴士充值",
-        0x23 to "巴士购票",
-        0x46 to "购物",
-        0x48 to "积分充值",
-        0x49 to "收银台充值",
-        0x4A to "购物取消",
-        0x4B to "站内购物",
-        0x84 to "补票（他社）",
-        0x85 to "进站补票（他社）",
-        0xC6 to "购物",
-        0xCB to "站内购物",
+        0x01 to R.string.proc_ride,
+        0x02 to R.string.proc_charge,
+        0x03 to R.string.proc_ticket,
+        0x04 to R.string.proc_adjust,
+        0x05 to R.string.proc_entry_adjust,
+        0x06 to R.string.proc_window,
+        0x07 to R.string.proc_new_card,
+        0x08 to R.string.proc_deduction,
+        0x0D to R.string.proc_bus,
+        0x0F to R.string.proc_bus,
+        0x11 to R.string.proc_reissue,
+        0x13 to R.string.proc_shinkansen,
+        0x14 to R.string.proc_auto_charge,
+        0x15 to R.string.proc_auto_charge,
+        0x1F to R.string.proc_bus_charge,
+        0x23 to R.string.proc_bus_ticket,
+        0x46 to R.string.proc_shopping,
+        0x48 to R.string.proc_point_charge,
+        0x49 to R.string.proc_register_charge,
+        0x4A to R.string.proc_shopping_cancel,
+        0x4B to R.string.proc_station_shopping,
+        0x84 to R.string.proc_adjust_other,
+        0x85 to R.string.proc_entry_adjust_other,
+        0xC6 to R.string.proc_shopping,
+        0xCB to R.string.proc_station_shopping,
     )
 
     private fun u8(b: ByteArray, i: Int) = b[i].toInt() and 0xFF

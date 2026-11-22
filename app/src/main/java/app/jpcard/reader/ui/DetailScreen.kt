@@ -58,6 +58,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import app.jpcard.reader.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
 import app.jpcard.reader.data.SavedCard
 import app.jpcard.reader.nfc.HistoryEntry
@@ -79,11 +82,11 @@ fun DetailScreen(card: SavedCard, state: AppState, actions: AppActions) {
             TopAppBar(
                 title = { Text(card.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 navigationIcon = {
-                    IconButton(onClick = actions.back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回") }
+                    IconButton(onClick = actions.back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) }
                 },
                 actions = {
-                    IconButton(onClick = { editing = true }) { Icon(Icons.Filled.Edit, "编辑卡片") }
-                    IconButton(onClick = { deleting = true }) { Icon(Icons.Filled.Delete, "删除") }
+                    IconButton(onClick = { editing = true }) { Icon(Icons.Filled.Edit, stringResource(R.string.edit_card)) }
+                    IconButton(onClick = { deleting = true }) { Icon(Icons.Filled.Delete, stringResource(R.string.delete)) }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
@@ -97,7 +100,7 @@ fun DetailScreen(card: SavedCard, state: AppState, actions: AppActions) {
                 item { BalanceHero(card, state) }
                 item {
                     Text(
-                        "最近记录",
+                        stringResource(R.string.recent_records),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 20.dp, bottom = 8.dp, start = 4.dp),
@@ -106,7 +109,7 @@ fun DetailScreen(card: SavedCard, state: AppState, actions: AppActions) {
                 if (card.data.history.isEmpty()) {
                     item {
                         Text(
-                            "暂无记录",
+                            stringResource(R.string.no_records),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(16.dp),
                         )
@@ -121,7 +124,7 @@ fun DetailScreen(card: SavedCard, state: AppState, actions: AppActions) {
                 if (card.data.history.isNotEmpty()) {
                     item {
                         Text(
-                            "卡片仅保存最近 20 条记录",
+                            stringResource(R.string.records_limit_note),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.outline,
                             modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
@@ -138,12 +141,12 @@ fun DetailScreen(card: SavedCard, state: AppState, actions: AppActions) {
     if (deleting) {
         AlertDialog(
             onDismissRequest = { deleting = false },
-            title = { Text("删除这张卡？") },
-            text = { Text("将从本机移除这张卡的记录和卡面，不影响卡片本身。") },
+            title = { Text(stringResource(R.string.delete_title)) },
+            text = { Text(stringResource(R.string.delete_message)) },
             confirmButton = {
-                TextButton(onClick = { deleting = false; actions.delete(card.idm) }) { Text("删除") }
+                TextButton(onClick = { deleting = false; actions.delete(card.idm) }) { Text(stringResource(R.string.delete)) }
             },
-            dismissButton = { TextButton(onClick = { deleting = false }) { Text("取消") } },
+            dismissButton = { TextButton(onClick = { deleting = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 }
@@ -183,7 +186,7 @@ private fun BalanceHero(card: SavedCard, state: AppState) {
             // 与最初版本一样的紧凑排版：卡名 · 余额 / 金额 / 读取时间
             Column(Modifier.align(Alignment.CenterStart).padding(horizontal = 24.dp)) {
                 Text(
-                    card.data.type.label + " · 余额",
+                    stringResource(R.string.balance_label, card.data.type.displayName(LocalContext.current)),
                     style = MaterialTheme.typography.labelLarge.copy(shadow = shadow),
                 )
                 Text(
@@ -203,13 +206,13 @@ private fun BalanceHero(card: SavedCard, state: AppState) {
                             Icon(Icons.Filled.CheckCircle, null, Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
                             Text(
-                                "已更新",
+                                stringResource(R.string.just_updated),
                                 style = MaterialTheme.typography.bodySmall.copy(shadow = shadow),
                                 fontWeight = FontWeight.SemiBold,
                             )
                         } else {
                             Text(
-                                "更新于 " + readTime(card.data.readAt),
+                                stringResource(R.string.updated_at, readTime(card.data.readAt)),
                                 style = MaterialTheme.typography.bodySmall.copy(shadow = shadow),
                                 color = Color.White.copy(alpha = 0.85f),
                             )
@@ -229,7 +232,7 @@ private fun KindBadge(kind: HistoryEntry.Kind) {
         Modifier.size(36.dp).background(color.copy(alpha = 0.14f), RoundedCornerShape(10.dp)),
         contentAlignment = Alignment.Center,
     ) {
-        Text(kind.label.take(1), color = color, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+        Text(stringResource(kind.badge), color = color, fontWeight = FontWeight.Bold, fontSize = 15.sp)
     }
 }
 
@@ -243,7 +246,7 @@ private fun HistoryRow(e: HistoryEntry, stationsReady: Boolean) {
     ) {
         KindBadge(e.kind)
         Column(Modifier.weight(1f)) {
-            Text(entryTitle(e), style = MaterialTheme.typography.bodyLarge)
+            Text(stringResource(entryTitle(e)), style = MaterialTheme.typography.bodyLarge)
             val sub = listOfNotNull(entryDate(e), entryDetail(e)).joinToString("  ·  ")
             Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -258,7 +261,7 @@ private fun HistoryRow(e: HistoryEntry, stationsReady: Boolean) {
                 )
             }
             Text(
-                "余额 " + yen(e.balance),
+                stringResource(R.string.balance_after, yen(e.balance)),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
