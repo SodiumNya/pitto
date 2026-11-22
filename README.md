@@ -1,59 +1,89 @@
-# Pitto（交通卡余额）
+<p align="center">
+  <img src="tools/art/mascot_source.png" width="160" alt="Pitto mascot">
+</p>
 
-读取 Suica / ICOCA 余额和最近 20 条记录的安卓 app。Kotlin + Jetpack Compose，离线使用，只需要 NFC 权限。
+<h1 align="center">Pitto</h1>
 
-## 环境（都在 F 盘）
+<p align="center">
+  Check the balance and recent trips of Japanese transit IC cards (Suica, ICOCA, PASMO, ...) with your Android phone.<br>
+  <a href="README.zh-CN.md">简体中文</a>
+</p>
 
-| 内容 | 位置 |
-|---|---|
-| Android SDK | `F:\dev\android-sdk` |
-| Gradle 缓存 | `F:\dev\gradle-home` |
-| adb 配置 | `F:\dev\android-user` |
-| Gradle 安装包 | `F:\dev\_downloads\gradle-8.14.3-bin.zip`（wrapper 从这里解压，不要删） |
-| JDK 17 | 复用已有的 `C:\Program Files\Java\jdk-17` |
+---
 
-## 在 VS Code 里使用
+Tap a card on the back of your phone and Pitto shows its balance and the last 20 records stored on the card,
+with station names. It works fully offline and only needs the NFC permission.
 
-`Ctrl+Shift+B` → 「安装到手机并启动 (Debug)」。其他任务在 `终端 → 运行任务` 里。
+It is especially handy for visitors to Japan: phones bought outside Japan usually cannot add Suica to Google Wallet,
+but their NFC can still read a physical card.
 
-手机准备：设置里打开「开发者选项 → USB 调试」，用 USB 连接电脑，手机上点「允许」。
+## Features
 
-## 代码结构
+- Balance and the 20 most recent records (rides, buses, top-ups, purchases) with color-coded categories
+- Station names for rail rides, operator (and stop where known) for bus rides
+- Detects the card type: Suica, ICOCA, PASMO, TOICA, manaca, Kitaca, nimoca, PiTaPa, SUGOCA, Hayakaken
+- Remembers your cards; rename them and set your own card face (crop and rotate a photo)
+- Sound and vibration feedback, live NFC on/off state
+- English, 简体中文, 繁體中文, 日本語, 한국어, with an in-app language picker
+- Light and dark theme; release APK about 1.4 MB
 
-- `nfc/FelicaReader.kt`：FeliCa 底层通信（Polling、Read Without Encryption）
-- `nfc/CardParser.kt`：CJRC 格式解析（余额、记录、处理种类）
-- `data/CardStore.kt`：本机保存读过的卡
-- `data/Stations.kt` + `assets/stations.tsv` / `bus.tsv`：站名表和巴士表
-- `data/CardFaces.kt`：自定义卡面
-- `ui/`：Compose 界面
+Pitto only reads data that the cards expose without encryption. It cannot top up or modify a card.
 
-## 多语言
+## Download
 
-界面支持英语（默认/兜底）、简体中文、繁体中文、日语、韩语，跟随系统语言；
-Android 13+ 可在系统设置里单独给 Pitto 选语言。文字在 `app/src/main/res/values*/strings.xml`。
-站名、巴士公司名保留日文原名；Suica 等卡名为专有名词不翻译。
+Get the APK from [Releases](../../releases). Requires Android 8.0+ and a phone with NFC.
 
-## 签名
+## Building
 
-debug 和 release 都用正式密钥签名（两者可以互相覆盖安装）：
+Requirements: JDK 17 and the Android SDK (platform 36). Set `JAVA_HOME` and `ANDROID_HOME`.
 
-| 内容 | 位置 |
-|---|---|
-| 密钥库 | `F:\dev\keys\pitto-release.jks` |
-| 密码等配置 | `F:\dev\keys\pitto-signing.properties` |
-| 引用方式 | `local.properties` 里的 `pitto.signing=...`（不进 git） |
-
-**务必备份 `F:\dev\keys` 整个文件夹**（例如网盘或 U 盘）。丢了密钥就无法再给已安装的 app 升级，只能卸载重装。
-找不到这些文件时会自动退回 debug 签名，不影响编译。
-
-## 站名数据
-
-`app/src/main/assets/stations.tsv`（铁路）和 `bus.tsv`（巴士）由 `tools/gen_stations.py` 生成，数据来自
-[Metrodroid](https://github.com/metrodroid/metrodroid) 的 `data/felica_stations.db3`（GPL-3.0-or-later，
-最初源自 FareBot 与 IC SFCard Fan 的站码表）。自用没有问题；如果要公开发布这个 app，需要遵守 GPL-3.0（公开源码并采用同一许可证）。
-
-重新生成：
-
-```powershell
-python -I tools\gen_stations.py <felica_stations.db3 路径> app\src\main\assets
+```sh
+./gradlew assembleDebug          # app/build/outputs/apk/debug/
+./gradlew installDebug           # install on a connected phone
 ```
+
+Release builds are signed with the debug key unless `pitto.signing` in `local.properties` points to a
+properties file with `storeFile`, `storePassword`, `keyAlias` and `keyPassword`.
+
+## Project layout
+
+```
+app/src/main/java/app/jpcard/reader/
+├── MainActivity.kt        NFC reader mode, lifecycle, feedback
+├── Feedback.kt            synthesized chime + vibration
+├── nfc/                   FeliCa commands and the CJRC record format
+│   ├── FelicaReader.kt    Polling, Request Service, Read Without Encryption
+│   ├── CardParser.kt      balance / history parsing, categories
+│   ├── CardType.kt        card type detection by issuer-specific service codes
+│   └── CardData.kt        data classes
+├── data/                  storage and lookup tables
+│   ├── CardStore.kt       saved cards (SharedPreferences, JSON)
+│   ├── CardFaces.kt       custom card face images
+│   ├── Stations.kt        station / bus stop lookup (assets/*.tsv)
+│   └── AppLanguage.kt     in-app language selection
+└── ui/                    Jetpack Compose screens; MainViewModel holds state and logic
+tools/
+├── gen_strings.py         single source of all UI text in every language
+├── gen_stations.py        builds assets/stations.tsv and bus.tsv
+└── gen_icon.py            builds the launcher icon from tools/art/mascot_source.png
+```
+
+To change UI text, edit `tools/gen_strings.py` and run `python tools/gen_strings.py app/src/main/res`.
+
+## How it works
+
+Transit IC cards in Japan are FeliCa cards using the common CJRC format. Balance and history live in services
+that can be read without keys: history is service `0x090F` (20 blocks of 16 bytes), and the card type is detected
+by asking (Request Service) which issuer-specific service codes exist. Station names are looked up by
+area + line + station code; the area comes from the record itself, so a Suica used in Osaka resolves Kansai
+stations correctly.
+
+## Credits and license
+
+- Station and bus stop data, and the issuer service code lists, come from
+  [Metrodroid](https://github.com/metrodroid/metrodroid) (GPL-3.0-or-later), originally from FareBot and the
+  IC SFCard Fan station code list.
+- Suica, ICOCA, PASMO and other card names are trademarks of their respective owners. Pitto is not affiliated
+  with any of them and uses no official logos.
+
+Pitto is free software under the [GNU General Public License v3.0 or later](LICENSE).

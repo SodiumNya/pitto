@@ -2,34 +2,34 @@ package app.jpcard.reader.nfc
 
 import androidx.annotation.StringRes
 import app.jpcard.reader.R
-
 import app.jpcard.reader.nfc.HistoryEntry.Kind
 
 /**
- * CJRC 格式（Suica / ICOCA 等交通系 IC 卡通用）的数据解析。
+ * Parser for the CJRC format shared by Japanese transit IC cards (Suica, ICOCA, ...).
  *
- * 乘车记录块（16 字节）：
- *  [0] 终端种类  [1] 处理种类  [2] 支付种类  [3] 进出站种类
- *  [4-5] 日期：年(7bit, 2000+) 月(4bit) 日(5bit)
- *  [6-7] 进站 线区/站  （消费类为 时(5) 分(6) 秒(5)）
- *  [8-9] 出站 线区/站
- *  [10-11] 余额（小端序）
- *  [12-14] 流水号  [15] 地区
+ * History block layout (16 bytes):
+ *  [0] terminal type  [1] process type  [2] payment type  [3] gate in/out type
+ *  [4-5] date: year (7 bits, +2000), month (4 bits), day (5 bits)
+ *  [6-7] entry line/station (purchases: hour (5), minute (6), second (5))
+ *  [8-9] exit line/station
+ *  [10-11] balance (little-endian)
+ *  [12-14] serial number  [15] area codes
  */
 object CardParser {
 
     private val SHOPPING = setOf(0x46, 0x49, 0x4A, 0x4B, 0xC6, 0xCB)
     private val BUS = setOf(0x0D, 0x0F, 0x1F, 0x23)
     private val CHARGE = setOf(0x02, 0x14, 0x15, 0x1F, 0x48, 0x49)
+    private val TRAIN = setOf(0x01, 0x03, 0x04, 0x05, 0x06, 0x13, 0x84, 0x85)
 
     fun parse(idm: ByteArray, type: CardType, blocks: List<ByteArray>, attribute: ByteArray?): CardData {
-        // 空的记录位不一定全是 0，以日期字段为空作为判断依据
+        // Empty slots are not always all zeros; an empty date marks them reliably.
         val raw = blocks.filter { be16(it, 4) != 0 }.map(::parseBlock)
         val entries = raw.mapIndexed { i, e ->
             val older = raw.getOrNull(i + 1)
             val delta = when {
                 older != null -> e.balance - older.balance
-                e.process == 0x07 -> e.balance // 新卡发行时的初始余额
+                e.process == 0x07 -> e.balance // initial balance of a newly issued card
                 else -> null
             }
             e.copy(delta = delta)
@@ -74,7 +74,7 @@ object CardParser {
         e.process in CHARGE -> Kind.CHARGE
         e.process in SHOPPING -> Kind.SHOPPING
         e.process in BUS || e.terminal == 0x05 -> Kind.BUS
-        e.process in setOf(0x01, 0x03, 0x04, 0x05, 0x06, 0x13, 0x84, 0x85) -> Kind.TRAIN
+        e.process in TRAIN -> Kind.TRAIN
         else -> Kind.OTHER
     }
 

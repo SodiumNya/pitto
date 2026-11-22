@@ -1,15 +1,15 @@
 """
-把看板娘插画（tools/art/mascot_source.png）转换成安卓自适应图标。
+Turns the mascot artwork (tools/art/mascot_source.png) into the adaptive icon layer.
 
-自适应图标是 108dp 的正方形，系统会按手机的图标形状裁掉外圈，只露出中间约 72dp。
-所以：
-  1. 裁掉原图四角的白色圆角
-  2. 把画面缩放到 64dp（三星桌面实际只露出中间约 64-66dp），完整保留原图构图
-  3. 外圈用原图边缘的平均色补满，作为保险
-输出 app/src/main/res/drawable-nodpi/ic_launcher_art.webp（432×432，相当于 xxxhdpi 的 108dp）。
+An adaptive icon is a 108dp square; launchers mask it and show roughly the middle 72dp.
+So the script:
+  1. crops off the white rounded corners of the artwork,
+  2. scales it to 64dp (Samsung's mask only shows about 64-66dp) to keep the whole picture,
+  3. pads the rest with the artwork's average edge color as a safety margin.
+Output: app/src/main/res/drawable-nodpi/ic_launcher_art.webp (432x432, i.e. 108dp at xxxhdpi).
 
-用法：
-  python -I tools/gen_icon.py [预览 png 输出路径]
+Usage:
+  python -I tools/gen_icon.py [preview.png]
 """
 import os
 import sys
@@ -21,8 +21,8 @@ SRC = os.path.join(ROOT, "tools", "art", "mascot_source.png")
 OUT = os.path.join(ROOT, "app", "src", "main", "res", "drawable-nodpi", "ic_launcher_art.webp")
 
 CANVAS = 432          # 108dp @ xxxhdpi
-ART = CANVAS * 64 // 108   # 三星等桌面的遮罩比标准 72dp 可见区还小一圈，留足余量完整保留原图构图
-CORNER_INSET = 72     # 原图四角白色圆角沿对角线约 67px
+ART = CANVAS * 64 // 108   # some launchers (Samsung) mask tighter than the standard 72dp
+CORNER_INSET = 72     # the white rounded corners reach ~67px along the diagonal
 
 
 def edge_color(im):
@@ -48,12 +48,12 @@ def main(preview=None):
     print("wrote %s (%d bytes)" % (OUT, os.path.getsize(OUT)))
 
     if preview:
-        # 预览：圆形遮罩（最严格）与三星的圆角方形，各两种尺寸
+        # Preview: circle mask (strictest) and Samsung-like squircle at a few sizes
         def masked(size, shape):
             img = canvas.resize((size, size), Image.LANCZOS)
             m = Image.new("L", (size, size), 0)
             d = ImageDraw.Draw(m)
-            # 可见区：108dp 中间 72dp
+            # Visible area: the middle 72dp of 108dp
             pad = size * 18 // 108
             box = (pad, pad, size - pad, size - pad)
             if shape == "circle":

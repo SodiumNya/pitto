@@ -1,17 +1,17 @@
 """
-把 FeliCa 车站数据库（SQLite）转换成 app 用的精简站名表。
+Converts the FeliCa station database (SQLite) into the compact tables the app ships.
 
-数据来源：Metrodroid 项目的 data/felica_stations.db3
-  https://github.com/metrodroid/metrodroid （GPL-3.0-or-later）
-  该数据最初来自 FareBot 项目和 IC SFCard Fan 的站码表。
+Source: data/felica_stations.db3 from Metrodroid
+  https://github.com/metrodroid/metrodroid (GPL-3.0-or-later)
+  originally from FareBot and the IC SFCard Fan station code list.
 
-用法：
+Usage:
   python -I tools/gen_stations.py <felica_stations.db3> app/src/main/assets
 
-输出（UTF-8，制表符分隔）：
-  stations.tsv  铁路车站：key(6 位十六进制: 地区<<16 | 线区<<8 | 站)  站名  公司  线路
-  bus.tsv       巴士：key(8 位十六进制: 巴士公司<<16 | 站点)  站点名  公司
-                站点为 0 的行表示“只知道公司”（原表里站名为“共通”）。
+Output (UTF-8, tab-separated):
+  stations.tsv  rail:  key (6 hex digits: area<<16 | line<<8 | station)  name  operator  line
+  bus.tsv       bus:   key (8 hex digits: operator<<16 | stop)  stop name  operator
+                Stop 0 means only the operator is known (listed as "共通" in the source).
 """
 import os
 import sqlite3

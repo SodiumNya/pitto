@@ -1,59 +1,47 @@
 {
+    // Requires JAVA_HOME and ANDROID_HOME to be set (see README).
     "version": "2.0.0",
-    "options": {
-        "env": {
-            "JAVA_HOME": "C:\\Program Files\\Java\\jdk-17",
-            "ANDROID_HOME": "F:\\dev\\android-sdk",
-            "ANDROID_USER_HOME": "F:\\dev\\android-user",
-            "GRADLE_USER_HOME": "F:\\dev\\gradle-home"
-        }
-    },
     "tasks": [
         {
-            "label": "安装到手机并启动 (Debug)",
+            "label": "Install & launch (debug)",
             "type": "shell",
-            "command": ".\\gradlew.bat installDebug; if ($?) { F:\\dev\\android-sdk\\platform-tools\\adb.exe shell am start -n app.jpcard.reader/.MainActivity }",
+            "command": "./gradlew installDebug && \"${env:ANDROID_HOME}/platform-tools/adb\" shell am start -n app.jpcard.reader/.MainActivity",
+            "windows": {
+                "command": ".\\gradlew.bat installDebug; if ($?) { & \"${env:ANDROID_HOME}\\platform-tools\\adb.exe\" shell am start -n app.jpcard.reader/.MainActivity }"
+            },
             "group": { "kind": "build", "isDefault": true },
             "problemMatcher": []
         },
         {
-            "label": "构建 Debug APK",
+            "label": "Build release APK",
             "type": "shell",
-            "command": ".\\gradlew.bat assembleDebug",
+            "command": "./gradlew assembleRelease",
+            "windows": { "command": ".\\gradlew.bat assembleRelease" },
             "group": "build",
             "problemMatcher": []
         },
         {
-            "label": "构建 Release APK（小体积）",
+            "label": "Install release",
             "type": "shell",
-            "command": ".\\gradlew.bat assembleRelease; if ($?) { explorer app\\build\\outputs\\apk\\release }",
+            "command": "./gradlew installRelease",
+            "windows": { "command": ".\\gradlew.bat installRelease" },
             "group": "build",
             "problemMatcher": []
         },
         {
-            "label": "安装 Release 到手机",
+            "label": "Show crash log",
             "type": "shell",
-            "command": ".\\gradlew.bat installRelease",
-            "group": "build",
-            "problemMatcher": []
-        },
-        {
-            "label": "查看已连接设备",
-            "type": "shell",
-            "command": "F:\\dev\\android-sdk\\platform-tools\\adb.exe devices -l",
-            "problemMatcher": []
-        },
-        {
-            "label": "查看崩溃日志",
-            "type": "shell",
-            "command": "F:\\dev\\android-sdk\\platform-tools\\adb.exe logcat -v brief AndroidRuntime:E app.jpcard.reader:V *:S",
+            "command": "\"${env:ANDROID_HOME}/platform-tools/adb\" logcat -v brief AndroidRuntime:E *:S",
+            "windows": { "command": "& \"${env:ANDROID_HOME}\\platform-tools\\adb.exe\" logcat -v brief AndroidRuntime:E *:S" },
             "isBackground": true,
             "problemMatcher": []
         },
         {
-            "label": "清理构建",
+            "label": "Stop Gradle daemon",
+            "detail": "Fixes 'classes.dex is being used by another process' on Windows",
             "type": "shell",
-            "command": ".\\gradlew.bat clean",
+            "command": "./gradlew --stop",
+            "windows": { "command": ".\\gradlew.bat --stop" },
             "problemMatcher": []
         }
     ]

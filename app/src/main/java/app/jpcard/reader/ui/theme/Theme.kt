@@ -27,7 +27,7 @@ private val Dark = darkColorScheme(
     surface = Color(0xFF121212),
 )
 
-/** 各卡种的卡面主色（取各卡的代表色，近似值；不使用任何官方标志）。白色文字都能看清。 */
+/** Main color per card type (approximations of each card's color; no official logos). White text is readable on all. */
 fun cardColor(type: CardType): Color = when (type) {
     CardType.SUICA -> Color(0xFF00924A)
     CardType.ICOCA -> Color(0xFF0071BC)
@@ -42,7 +42,7 @@ fun cardColor(type: CardType): Color = when (type) {
     CardType.UNKNOWN -> Color(0xFF0E7C66)
 }
 
-/** 记录类别的标记色。浅色、深色模式下都清晰；OTHER 用中性灰兜底。 */
+/** Category badge colors, readable in light and dark mode; OTHER falls back to neutral gray. */
 @Composable
 fun kindColor(kind: HistoryEntry.Kind): Color {
     val dark = isSystemInDarkTheme()
@@ -55,11 +55,11 @@ fun kindColor(kind: HistoryEntry.Kind): Color {
     }
 }
 
-/** 收入（充值）用绿色，支出保持正文色，避免满屏红色。 */
+/** Top-ups are green; spending keeps the normal text color to avoid a screen full of red. */
 val IncomeColor @Composable get() = if (isSystemInDarkTheme()) Color(0xFF7FD1B9) else Color(0xFF0E7C66)
 
 @Composable
 fun AppTheme(content: @Composable () -> Unit) {
-    // 固定品牌色，不跟随壁纸取色，保证界面风格一致
+    // Fixed brand colors instead of wallpaper-based dynamic color, for a consistent look.
     MaterialTheme(colorScheme = if (isSystemInDarkTheme()) Dark else Light, content = content)
 }

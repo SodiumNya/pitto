@@ -2,9 +2,10 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
 /**
- * 正式签名：密钥文件和密码都不进 git。
- * local.properties 里的 pitto.signing 指向一个 properties 文件（storeFile / storePassword / keyAlias / keyPassword）。
- * 找不到时退回 debug 签名，保证别的电脑也能编译。
+ * Release signing. Keys and passwords never go into git:
+ * `pitto.signing` in local.properties points to a properties file with
+ * storeFile / storePassword / keyAlias / keyPassword.
+ * Without it the debug key is used, so the project builds anywhere.
  */
 val signingProps: Properties? = run {
     val local = Properties()
@@ -46,7 +47,7 @@ android {
 
     buildTypes {
         debug {
-            // 与 release 用同一把密钥，两种版本可以互相覆盖安装，不会因签名不同被迫卸载丢数据
+            // Same key as release, so debug and release builds can be installed over each other without losing data.
             signingConfigs.findByName("release")?.let { signingConfig = it }
         }
         release {

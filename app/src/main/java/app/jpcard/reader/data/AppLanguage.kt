@@ -9,15 +9,15 @@ import app.jpcard.reader.R
 import java.util.Locale
 
 /**
- * App 内的语言选择。空字符串表示“跟随系统”。
- * - Android 13+：使用系统的“应用语言”接口，与系统设置里的 Pitto 语言是同一个设置。
- * - Android 8~12：自己保存选择，在 Activity 创建时套用。
+ * In-app language choice. An empty tag means "follow the system".
+ * - Android 13+: uses the system per-app language API, i.e. the same setting as Pitto's language in system settings.
+ * - Android 8-12: the choice is stored by the app and applied when the activity is created.
  */
 object AppLanguage {
-    /** 可选语言（BCP-47）。顺序即设置页里的显示顺序。 */
+    /** Selectable languages (BCP-47), in the order shown in settings. */
     val options = listOf("", "en", "zh-Hans", "zh-Hant", "ja", "ko")
 
-    /** 各语言用自己的写法显示，无论当前界面是什么语言都能认出来。 */
+    /** Each language is shown in its own script, so it is recognizable whatever the current UI language is. */
     private val names = mapOf(
         "en" to "English",
         "zh-Hans" to "简体中文",
@@ -32,7 +32,7 @@ object AppLanguage {
     fun label(context: Context, tag: String): String =
         names[tag] ?: context.getString(R.string.language_system)
 
-    /** 当前选择（规整成 [options] 里的值）。 */
+    /** The current choice, normalized to one of [options]. */
     fun current(context: Context): String {
         val raw = if (Build.VERSION.SDK_INT >= 33) {
             val list = context.getSystemService(LocaleManager::class.java).applicationLocales
@@ -45,7 +45,7 @@ object AppLanguage {
 
     fun set(activity: Activity, tag: String) {
         if (Build.VERSION.SDK_INT >= 33) {
-            // 系统会自动重建界面
+            // The system re-creates the activity by itself.
             activity.getSystemService(LocaleManager::class.java).applicationLocales =
                 if (tag.isEmpty()) LocaleList.getEmptyLocaleList() else LocaleList.forLanguageTags(tag)
         } else {
@@ -54,7 +54,7 @@ object AppLanguage {
         }
     }
 
-    /** Android 8~12：在 attachBaseContext 里套用保存的语言。 */
+    /** Android 8-12: applies the stored language in attachBaseContext. */
     fun wrap(base: Context): Context {
         if (Build.VERSION.SDK_INT >= 33) return base
         val tag = base.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, "") ?: ""
@@ -65,7 +65,7 @@ object AppLanguage {
         return base.createConfigurationContext(config)
     }
 
-    /** 把系统给的语言标签（如 zh-Hant-TW、ja-JP）对应到 [options]。 */
+    /** Maps a system locale tag (e.g. zh-Hant-TW, ja-JP) to one of [options]. */
     private fun normalize(tag: String): String {
         if (tag.isEmpty()) return ""
         val locale = Locale.forLanguageTag(tag)

@@ -5,3 +5,11 @@ local.properties
 *.iml
 .idea/
 captures/
+# Signing keys and their passwords must never be committed
+*.jks
+*.keystore
+signing.properties
+*-signing.properties
+
+# Personal notes for this machine (paths, signing key location)
+LOCAL_SETUP.md

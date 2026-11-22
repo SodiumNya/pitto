@@ -1,1 +1,1 @@
-# 项目没有反射/序列化框架，默认规则已足够。
+# No reflection or serialization frameworks are used; the default rules are enough.

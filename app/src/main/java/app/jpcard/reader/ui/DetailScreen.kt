@@ -7,31 +7,26 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.graphics.graphicsLayer
-import kotlinx.coroutines.delay
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.graphics.Shadow
-import app.jpcard.reader.data.CardFaces
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
@@ -39,41 +34,43 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import app.jpcard.reader.R
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
+import app.jpcard.reader.R
+import app.jpcard.reader.data.CardFaces
 import app.jpcard.reader.data.SavedCard
 import app.jpcard.reader.nfc.HistoryEntry
 import app.jpcard.reader.ui.theme.IncomeColor
-import app.jpcard.reader.ui.theme.cardColor
 import app.jpcard.reader.ui.theme.kindColor
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DetailScreen(card: SavedCard, state: AppState, actions: AppActions) {
+fun DetailScreen(card: SavedCard, state: MainViewModel, actions: AppActions) {
     var editing by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
 
@@ -152,11 +149,11 @@ fun DetailScreen(card: SavedCard, state: AppState, actions: AppActions) {
 }
 
 /**
- * 余额卡片，按真实卡片比例显示。有自定义卡面就用图片，否则用卡种配色。
- * 刚读卡成功时：整块轻微弹一下，并短暂显示“✓ 已更新”。
+ * Balance card, drawn with the custom face if set, otherwise the card type color.
+ * Right after a successful read it pops slightly and briefly shows "Updated".
  */
 @Composable
-private fun BalanceHero(card: SavedCard, state: AppState) {
+private fun BalanceHero(card: SavedCard, state: MainViewModel) {
     val scale = remember { Animatable(1f) }
     var justUpdated by remember { mutableStateOf(false) }
     LaunchedEffect(state.readTick) {
@@ -183,7 +180,7 @@ private fun BalanceHero(card: SavedCard, state: AppState) {
             .aspectRatio(CardFaces.RATIO),
     ) {
         CompositionLocalProvider(LocalContentColor provides Color.White) {
-            // 与最初版本一样的紧凑排版：卡名 · 余额 / 金额 / 读取时间
+            // Compact layout: "<type> · Balance", amount, update time.
             Column(Modifier.align(Alignment.CenterStart).padding(horizontal = 24.dp)) {
                 Text(
                     stringResource(R.string.balance_label, card.data.type.displayName(LocalContext.current)),
@@ -224,7 +221,7 @@ private fun BalanceHero(card: SavedCard, state: AppState) {
     }
 }
 
-/** 类别色块：浅色底 + 类别首字。 */
+/** Category badge: tinted square with a one-character label. */
 @Composable
 private fun KindBadge(kind: HistoryEntry.Kind) {
     val color = kindColor(kind)
@@ -236,8 +233,8 @@ private fun KindBadge(kind: HistoryEntry.Kind) {
     }
 }
 
+/** One history record. [stationsReady] is part of the cache key so names appear once the table loads. */
 @Composable
-@Suppress("UNUSED_PARAMETER") // stationsReady 只用来在站名表加载完后触发重组
 private fun HistoryRow(e: HistoryEntry, stationsReady: Boolean) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 14.dp),
@@ -247,7 +244,8 @@ private fun HistoryRow(e: HistoryEntry, stationsReady: Boolean) {
         KindBadge(e.kind)
         Column(Modifier.weight(1f)) {
             Text(stringResource(entryTitle(e)), style = MaterialTheme.typography.bodyLarge)
-            val sub = listOfNotNull(entryDate(e), entryDetail(e)).joinToString("  ·  ")
+            val detail = remember(e, stationsReady) { entryDetail(e) }
+            val sub = listOfNotNull(entryDate(e), detail).joinToString("  ·  ")
             Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Column(horizontalAlignment = Alignment.End) {

@@ -15,30 +15,30 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 
 /**
- * 用户自定义卡面。
- * 用户在裁剪界面里选定的区域会被缩放成 [W]×[H] 存成 JPEG，只保存在 app 私有目录里。
+ * Custom card faces.
+ * The area chosen in the crop screen is scaled to [W]x[H] and stored as a JPEG in app-private storage.
  */
 object CardFaces {
-    /** 卡面统一比例（宽:高）。详情页余额卡和主页小卡面都用这个比例，裁剪结果完全一致。 */
+    /** Card face aspect ratio (width:height), shared by the detail balance card and the crop frame. */
     const val RATIO = 2.5f
     private const val W = 1000
     private const val H = 400
 
-    /** 裁剪界面用的原图最长边，够清晰又不占太多内存。 */
+    /** Longest side of the photo loaded into the crop screen: sharp enough without using too much memory. */
     private const val EDIT_MAX = 2048
 
     private val cache = HashMap<String, Pair<Long, ImageBitmap>>()
 
     private fun file(context: Context, idm: String) = File(context.filesDir, "faces/$idm.jpg")
 
-    /** 从内存缓存直接取，取不到返回 null（不读盘，可在主线程调用）。 */
+    /** Returns the in-memory cached face or null. Does no disk I/O, so it is safe on the main thread. */
     fun cached(context: Context, idm: String): ImageBitmap? {
         val f = file(context, idm)
         val hit = synchronized(cache) { cache[idm] } ?: return null
         return if (f.exists() && f.lastModified() == hit.first) hit.second else null
     }
 
-    /** 读盘解码，在后台线程调用。图片不存在或损坏时返回 null，界面会用默认卡面。 */
+    /** Loads and decodes from disk; call off the main thread. Returns null if missing or broken, so the default face is used. */
     fun load(context: Context, idm: String): ImageBitmap? {
         cached(context, idm)?.let { return it }
         val f = file(context, idm)
@@ -49,7 +49,7 @@ object CardFaces {
         return img
     }
 
-    /** 把用户选的图片解码成适合编辑的大小，在后台线程调用。Android 9+ 会自动按 EXIF 摆正方向。 */
+    /** Decodes the picked photo at an editable size; call off the main thread. Android 9+ applies the EXIF rotation automatically. */
     fun decodeForEdit(context: Context, uri: Uri): Bitmap? = runCatching {
         val cr = context.contentResolver
         if (Build.VERSION.SDK_INT >= 28) {
@@ -74,7 +74,7 @@ object CardFaces {
     fun rotate90(src: Bitmap): Bitmap =
         Bitmap.createBitmap(src, 0, 0, src.width, src.height, Matrix().apply { postRotate(90f) }, true)
 
-    /** 按裁剪区域保存卡面，在后台线程调用。 */
+    /** Saves the cropped area as the card face; call off the main thread. */
     fun save(context: Context, idm: String, src: Bitmap, crop: Rect): Boolean = runCatching {
         val r = Rect(crop).apply { if (!intersect(0, 0, src.width, src.height)) return false }
         val cropped = Bitmap.createBitmap(src, r.left, r.top, r.width(), r.height())

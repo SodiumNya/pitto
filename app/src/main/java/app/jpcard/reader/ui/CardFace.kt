@@ -22,7 +22,7 @@ import app.jpcard.reader.ui.theme.cardColor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** 读取自定义卡面；version 变化（用户换了图）时重新加载。没有或读不出来时为 null。 */
+/** Loads the custom face; reloads when [version] changes. Null when there is none or it cannot be read. */
 @Composable
 fun rememberCardFace(idm: String, version: Int): ImageBitmap? {
     val context = LocalContext.current
@@ -33,8 +33,8 @@ fun rememberCardFace(idm: String, version: Int): ImageBitmap? {
 }
 
 /**
- * 卡面背景：有自定义图片就用图片（加一层渐变保证文字看得清），
- * 否则用卡种配色兜底。
+ * Card face background: the custom image if there is one (with a gradient so text stays readable),
+ * otherwise the card type color.
  */
 @Composable
 fun CardFaceBox(
@@ -51,7 +51,7 @@ fun CardFaceBox(
             if (scrim) {
                 Box(
                     Modifier.fillMaxSize().background(
-                        // 文字在左侧，左深右浅的渐变保证文字清晰，又不遮住图片主体
+                        // Text sits on the left, so darken the left side only and keep the image visible.
                         Brush.horizontalGradient(
                             0f to Color.Black.copy(alpha = 0.55f),
                             0.6f to Color.Black.copy(alpha = 0.15f),

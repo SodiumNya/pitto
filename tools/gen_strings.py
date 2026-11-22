@@ -1,12 +1,13 @@
 """
-界面文字的唯一来源：改这里，再运行一次生成 5 种语言的 strings.xml。
+Single source of all UI text. Edit here, then run it to regenerate strings.xml for all languages.
 
-用法：
+Usage:
   python -I tools/gen_strings.py app/src/main/res
 
-每条：key: (English 默认, 简体中文, 繁體中文, 日本語, 한국어)
+Each entry: key: (English (default), Simplified Chinese, Traditional Chinese, Japanese, Korean)
 """
-import os, sys
+import os
+import sys
 from xml.sax.saxutils import escape
 
 RES = sys.argv[1]
@@ -60,7 +61,7 @@ S = {
  "settings": ("Settings", "设置", "設定", "設定", "설정"),
  "language": ("Language", "语言", "語言", "言語", "언어"),
  "language_system": ("System default", "跟随系统", "跟隨系統", "システムの設定", "시스템 설정"),
- # 记录类别（标签 + 色块里的一个字）
+ # History categories (label + one-character badge)
  "kind_train": ("Train", "乘车", "乘車", "乗車", "승차"),
  "kind_bus": ("Bus", "巴士", "巴士", "バス", "버스"),
  "kind_shopping": ("Shopping", "购物", "購物", "物販", "구매"),
@@ -71,7 +72,7 @@ S = {
  "badge_shopping": ("S", "购", "購", "買", "구"),
  "badge_charge": ("+", "充", "儲", "チ", "충"),
  "badge_other": ("•", "其", "其", "他", "기"),
- # 处理种类
+ # Process types
  "proc_ride": ("Train ride", "乘车", "乘車", "乗車", "승차"),
  "proc_charge": ("Top-up", "充值", "儲值", "チャージ", "충전"),
  "proc_ticket": ("Ticket purchase", "购票", "購票", "切符購入", "승차권 구매"),

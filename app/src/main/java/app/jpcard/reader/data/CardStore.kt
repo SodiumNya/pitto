@@ -7,7 +7,7 @@ import app.jpcard.reader.nfc.HistoryEntry
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** 本地保存过的卡片（只存在本机，不联网）。 */
+/** A card saved on this device (never uploaded anywhere). */
 data class SavedCard(
     val idm: String,
     val name: String,
@@ -26,10 +26,10 @@ class CardStore(context: Context) {
     }
 
     /**
-     * 保存读卡结果。名字规则：
-     * - 用户改过的名字：保留
-     * - 已经是本卡种的默认名（“Suica”“Suica 2”…）且没和别的卡重名：保留，名字不会跳来跳去
-     * - 其他情况（新卡、旧版本的“交通卡 · XXXX”、卡种刚识别出来）：分配下一个空闲的默认名
+     * Saves a read result. Naming rules:
+     * - a name the user changed is kept;
+     * - a default name of this card type ("Suica", "Suica 2", ...) that no other card uses is kept, so names never jump around;
+     * - otherwise (new card, legacy default name, type newly detected) the next free default name is assigned.
      */
     fun save(data: CardData): SavedCard {
         val cards = all().toMutableList()
@@ -69,7 +69,7 @@ class CardStore(context: Context) {
     companion object {
         private const val KEY = "cards_v1"
 
-        /** 第一张叫“Suica”，同种的第二张起叫“Suica 2”“Suica 3”… */
+        /** The first card is "Suica"; further cards of the same type are "Suica 2", "Suica 3", ... */
         fun nextDefaultName(type: CardType, taken: Set<String>): String {
             if (type.label !in taken) return type.label
             var n = 2
@@ -83,7 +83,7 @@ class CardStore(context: Context) {
             return suffix != name && suffix.toIntOrNull()?.let { it >= 2 } == true
         }
 
-        /** 默认名（含旧版本的“交通卡 · XXXX”“Suica · XXXX”）都视为用户没改过。 */
+        /** Default names, including legacy ones from earlier versions, count as "not renamed by the user". */
         private fun isDefaultName(name: String, idm: String): Boolean {
             val tail = " · ${idm.takeLast(4)}"
             return name == "交通卡$tail" || name.startsWith("交通系IC") ||
@@ -136,7 +136,7 @@ class CardStore(context: Context) {
                     serial = e.getInt("serial"),
                     region = e.getInt("region"),
                 )
-            }.filter { it.month != 0 } // 旧版本可能存了空记录位
+            }.filter { it.month != 0 } // older versions may have stored empty history slots
             val idm = o.getString("idm")
             val type = CardType.fromName(o.optString("type"))
             return SavedCard(

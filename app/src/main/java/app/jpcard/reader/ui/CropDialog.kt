@@ -40,20 +40,20 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import app.jpcard.reader.R
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import app.jpcard.reader.R
 import app.jpcard.reader.data.CardFaces
 import kotlin.math.max
 import kotlin.math.roundToInt
 
 /**
- * 卡面裁剪：图片始终铺满卡片框，单指拖动、双指缩放，按钮每次旋转 90°。
- * 框外区域变暗，框内就是最终卡面的样子。
+ * Card face cropper: the image always covers the frame; drag, pinch to zoom, rotate in 90-degree steps.
+ * Outside the frame is dimmed; inside is exactly the resulting face.
  */
 @Composable
 fun CropDialog(source: Bitmap, onCancel: () -> Unit, onConfirm: (Bitmap, android.graphics.Rect) -> Unit) {
@@ -64,7 +64,7 @@ fun CropDialog(source: Bitmap, onCancel: () -> Unit, onConfirm: (Bitmap, android
     var area by remember { mutableStateOf(Size.Zero) }
     val margin = with(LocalDensity.current) { 24.dp.toPx() }
 
-    // 几何换算都以“区域中心”为原点
+    // All geometry uses the center of the drawing area as origin.
     val geo = remember(bitmap, area, margin) { CropGeometry(bitmap.width, bitmap.height, area, margin) }
 
     Dialog(onDismissRequest = onCancel, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -82,7 +82,7 @@ fun CropDialog(source: Bitmap, onCancel: () -> Unit, onConfirm: (Bitmap, android
                         detectTransformGestures { centroid, pan, zoomChange, _ ->
                             val newZoom = (zoom * zoomChange).coerceIn(1f, 6f)
                             val k = newZoom / zoom
-                            // 以手指中心为缩放中心
+                            // Zoom around the gesture centroid.
                             val c = centroid - Offset(area.width / 2, area.height / 2)
                             zoom = newZoom
                             offset = geo.clamp((offset - c) * k + c + pan, zoom)
@@ -135,17 +135,17 @@ fun CropDialog(source: Bitmap, onCancel: () -> Unit, onConfirm: (Bitmap, android
     }
 }
 
-/** 裁剪框与图片的几何关系。坐标原点在显示区域中心。 */
+/** Geometry between the crop frame and the image; origin at the center of the drawing area. */
 private class CropGeometry(val bw: Int, val bh: Int, val area: Size, margin: Float) {
-    /** 卡片框：左右各留 margin，比例与卡面一致 */
+    /** Crop frame: [margin] on both sides, card face aspect ratio. */
     val frame: Size = (area.width - margin * 2).coerceAtLeast(1f).let { Size(it, it / CardFaces.RATIO) }
 
-    /** zoom=1 时图片刚好铺满卡片框 */
+    /** At zoom 1 the image just covers the frame. */
     private val base = max(frame.width / bw, frame.height / bh)
 
     fun scale(zoom: Float) = base * zoom
 
-    /** 限制拖动范围，保证卡片框内始终是图片 */
+    /** Limits panning so the frame is always covered by the image. */
     fun clamp(o: Offset, zoom: Float): Offset {
         val s = scale(zoom)
         val maxX = ((bw * s - frame.width) / 2).coerceAtLeast(0f)
@@ -153,7 +153,7 @@ private class CropGeometry(val bw: Int, val bh: Int, val area: Size, margin: Flo
         return Offset(o.x.coerceIn(-maxX, maxX), o.y.coerceIn(-maxY, maxY))
     }
 
-    /** 卡片框对应到原图上的像素区域 */
+    /** The frame mapped to pixels of the source image. */
     fun cropRect(offset: Offset, zoom: Float): android.graphics.Rect {
         val s = scale(zoom)
         val o = clamp(offset, zoom)

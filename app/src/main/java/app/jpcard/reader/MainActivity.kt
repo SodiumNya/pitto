@@ -10,34 +10,32 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
-import androidx.activity.viewModels
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import app.jpcard.reader.data.AppLanguage
-import app.jpcard.reader.data.CardFaces
-import app.jpcard.reader.data.CardStore
-import app.jpcard.reader.data.Stations
 import app.jpcard.reader.nfc.CardReadException
 import app.jpcard.reader.nfc.FelicaReader
 import app.jpcard.reader.ui.App
 import app.jpcard.reader.ui.AppActions
-import app.jpcard.reader.ui.AppState
-import app.jpcard.reader.ui.CropRequest
+import app.jpcard.reader.ui.MainViewModel
 import app.jpcard.reader.ui.NfcStatus
 import app.jpcard.reader.ui.theme.AppTheme
 
+/**
+ * The only activity. It owns what needs an Activity: NFC reader mode, the NFC on/off
+ * broadcast, sound/vibration feedback and launching system screens.
+ * All UI state and logic live in [MainViewModel].
+ */
 class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
 
+    private val vm: MainViewModel by viewModels()
     private var nfc: NfcAdapter? = null
-    private lateinit var store: CardStore
     private lateinit var feedback: Feedback
-    private val state: AppState by viewModels()
 
-    /** 系统在 NFC 开关变化时发广播，只在前台时注册，不轮询、不耗电。 */
+    /** The system broadcasts NFC on/off changes; registered only while in the foreground, so it costs nothing. */
     private val nfcStateReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            refreshNfc()
-        }
+        override fun onReceive(context: Context, intent: Intent) = refreshNfc()
     }
 
     override fun attachBaseContext(newBase: Context) {
@@ -47,68 +45,24 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        store = CardStore(this)
         feedback = Feedback(this)
         nfc = NfcAdapter.getDefaultAdapter(this)
-        state.cards = store.all()
-        state.stationsReady = Stations.loaded
-        if (!Stations.loaded) {
-            Thread {
-                runCatching { Stations.load(applicationContext) }
-                runOnUiThread { state.stationsReady = Stations.loaded }
-            }.start()
-        }
 
         val actions = AppActions(
-            openCard = { state.selectedIdm = it },
-            back = {
-                if (state.showSettings) state.showSettings = false else state.selectedIdm = null
-            },
-            openSettings = { state.showSettings = true },
+            openCard = vm::openCard,
+            back = vm::back,
+            openSettings = vm::openSettings,
             setLanguage = { tag -> AppLanguage.set(this, tag) },
-            rename = { idm, name -> store.rename(idm, name); state.cards = store.all() },
-            delete = { idm ->
-                store.delete(idm)
-                CardFaces.delete(this, idm)
-                state.cards = store.all()
-                if (state.selectedIdm == idm) state.selectedIdm = null
-            },
-            setFace = { idm, uri ->
-                // 先解码成适合编辑的大小，再打开裁剪界面
-                state.faceBusy = true
-                Thread {
-                    val bmp = CardFaces.decodeForEdit(applicationContext, uri)
-                    runOnUiThread {
-                        state.faceBusy = false
-                        if (bmp == null) {
-                            state.error = R.string.err_image
-                        } else {
-                            state.crop = CropRequest(idm, bmp)
-                        }
-                    }
-                }.start()
-            },
-            confirmCrop = { bmp, rect ->
-                val idm = state.crop?.idm
-                state.crop = null
-                if (idm != null) {
-                    state.faceBusy = true
-                    Thread {
-                        val ok = CardFaces.save(applicationContext, idm, bmp, rect)
-                        runOnUiThread {
-                            state.faceBusy = false
-                            state.faceVersion++
-                            if (!ok) state.error = R.string.err_face_save
-                        }
-                    }.start()
-                }
-            },
-            cancelCrop = { state.crop = null },
-            clearFace = { idm -> CardFaces.delete(this, idm); state.faceVersion++ },
-            dismissError = { state.error = null },
+            rename = vm::rename,
+            delete = vm::delete,
+            pickFace = vm::pickFace,
+            confirmCrop = vm::confirmCrop,
+            cancelCrop = vm::cancelCrop,
+            clearFace = vm::clearFace,
+            dismissError = vm::dismissError,
             openNfcSettings = { startActivity(Intent(Settings.ACTION_NFC_SETTINGS)) },
         )
-        setContent { AppTheme { App(state, actions) } }
+        setContent { AppTheme { App(vm, actions) } }
 
         if (savedInstanceState == null) handleIntent(intent)
     }
@@ -142,9 +96,9 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
             !adapter.isEnabled -> NfcStatus.DISABLED
             else -> NfcStatus.READY
         }
-        state.nfcStatus = status
+        vm.setNfcState(status)
         if (status == NfcStatus.READY) {
-            // NFC 重新打开后需要重新进入读卡模式
+            // Reader mode has to be re-entered after NFC is switched back on.
             adapter?.enableReaderMode(
                 this, this,
                 NfcAdapter.FLAG_READER_NFC_F or
@@ -152,46 +106,34 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
                     NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS,
                 Bundle().apply { putInt(NfcAdapter.EXTRA_READER_PRESENCE_CHECK_DELAY, 1000) },
             )
-        } else {
-            state.reading = false
         }
     }
 
-    /** 冷启动时由“贴卡自动打开”带进来的卡片。 */
+    /** A card that launched the app from the background ("tap to open"). */
     private fun handleIntent(intent: Intent?) {
         if (intent?.action != NfcAdapter.ACTION_TECH_DISCOVERED) return
         val tag = if (Build.VERSION.SDK_INT >= 33) {
             intent.getParcelableExtra(NfcAdapter.EXTRA_TAG, Tag::class.java)
         } else {
-            @Suppress("DEPRECATION") intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
         } ?: return
         Thread { onTagDiscovered(tag) }.start()
     }
 
-    /** NFC 线程回调，可直接做阻塞 IO。 */
+    /** Called on an NFC binder thread, so blocking I/O is fine here. */
     override fun onTagDiscovered(tag: Tag) {
-        runOnUiThread { state.reading = true; state.error = null }
+        runOnUiThread { vm.onReadStarted() }
         val result = try {
             Result.success(FelicaReader.read(tag))
         } catch (e: CardReadException) {
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             Result.failure(CardReadException(R.string.err_read_failed))
         }
         runOnUiThread {
-            state.reading = false
-            result.onSuccess { data ->
-                val card = store.save(data)
-                state.cards = store.all()
-                state.selectedIdm = card.idm
-                state.celebrate(card.idm)
-                feedback.success()
-            }.onFailure {
-                state.error = (it as? CardReadException)?.reason ?: R.string.err_read_failed
-                state.errorTick++
-                feedback.failure()
-            }
+            vm.onReadFinished(result)
+            if (result.isSuccess) feedback.success() else feedback.failure()
         }
     }
-
 }

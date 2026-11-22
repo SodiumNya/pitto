@@ -4,11 +4,11 @@ import android.content.Context
 import app.jpcard.reader.R
 
 /**
- * 交通系 IC 卡种类。
+ * Transit IC card type.
  *
- * 各发卡方都会在 CJRC 系统（0x0003）里登记几个自己独有的服务码，
- * 用 Request Service 命令查询这些服务码是否存在即可分辨卡种。
- * 服务码清单参考 Metrodroid 项目的整理（SuicaUtil.kt）。
+ * Every issuer registers a few service codes of its own in the CJRC system (0x0003);
+ * asking which of them exist with Request Service tells the card types apart.
+ * The service code lists come from Metrodroid's research (SuicaUtil.kt).
  */
 enum class CardType(val label: String, val probes: IntArray) {
     SUICA("Suica", intArrayOf(0x1808, 0x18C8)),
@@ -26,10 +26,10 @@ enum class CardType(val label: String, val probes: IntArray) {
     companion object {
         val detectable = entries.filter { it.probes.isNotEmpty() }
 
-        /** 所有探测用服务码，顺序与 [detectable] 展开后一致（共 20 个，一条命令即可查完）。 */
+        /** All probe codes, in [detectable] order (20 in total, so one command checks them all). */
         val allProbes: IntArray = detectable.flatMap { it.probes.asList() }.toIntArray()
 
-        /** 根据每个服务码是否存在判断卡种；命中且只命中一种时才认定。 */
+        /** Decides the type from which probes exist; only an unambiguous single match counts. */
         fun fromProbeResult(exists: BooleanArray): CardType {
             var i = 0
             val hits = detectable.filter { t ->
@@ -43,7 +43,7 @@ enum class CardType(val label: String, val probes: IntArray) {
         fun fromName(name: String?): CardType = entries.find { it.name == name } ?: UNKNOWN
     }
 
-    /** 显示名：卡名是专有名词不翻译，只有“未知卡种”按语言显示。 */
+    /** Display name: card names are proper nouns and not translated; only "unknown" is localized. */
     fun displayName(context: Context): String =
         if (this == UNKNOWN) context.getString(R.string.card_type_unknown) else label
 }

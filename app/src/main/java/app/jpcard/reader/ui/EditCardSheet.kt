@@ -31,24 +31,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.jpcard.reader.R
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.platform.LocalContext
 import app.jpcard.reader.data.CardFaces
 import app.jpcard.reader.data.SavedCard
 
-/** 编辑卡片：名字 + 卡面（从相册选择 / 恢复默认）。关闭面板时自动保存名字。 */
+/** Edit sheet: name and card face (pick a photo / reset). The name is saved when the sheet closes. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditCardSheet(card: SavedCard, state: AppState, actions: AppActions, onDismiss: () -> Unit) {
+fun EditCardSheet(card: SavedCard, state: MainViewModel, actions: AppActions, onDismiss: () -> Unit) {
     val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var name by remember { mutableStateOf(card.name) }
     val face = rememberCardFace(card.idm, state.faceVersion)
-    // 系统照片选择器：不需要任何存储权限
+    // System photo picker: needs no storage permission.
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) actions.setFace(card.idm, uri)
+        if (uri != null) actions.pickFace(card.idm, uri)
     }
     val close = {
         if (name.trim() != card.name) actions.rename(card.idm, name.trim())

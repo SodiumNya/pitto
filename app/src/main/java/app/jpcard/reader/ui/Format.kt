@@ -21,13 +21,13 @@ fun signedYen(amount: Int): String = when {
     else -> yen(0)
 }
 
-/** 按当前语言习惯格式化，例如 “11/22 14:30”“Nov 22 14:30”“11月22日 14:30”。 */
+/** Formats with the current locale's pattern, e.g. "11/22 14:30", "Nov 22 14:30", "11月22日 14:30". */
 private fun localized(skeleton: String, time: Date): String {
     val locale = Locale.getDefault()
     return SimpleDateFormat(DateFormat.getBestDateTimePattern(locale, skeleton), locale).format(time)
 }
 
-/** 读取时间：今天只显示“今天 14:30”，今年显示月日，往年带年份。 */
+/** Read time: "Today 14:30" for today, month/day this year, full date otherwise. */
 @Composable
 fun readTime(millis: Long): String {
     val now = Calendar.getInstance()
@@ -52,7 +52,7 @@ fun entryDate(e: HistoryEntry): String {
 @StringRes
 fun entryTitle(e: HistoryEntry): Int = CardParser.processLabel(e.process)
 
-/** 查不到站名时退回显示 线区-站 编号。 */
+/** Falls back to "line-station" numbers when the station is unknown. */
 private fun stationName(area: Int, line: Int, station: Int): String =
     Stations.find(area, line, station)?.name ?: "%d-%d".format(line, station)
 
@@ -65,7 +65,7 @@ fun entryDetail(e: HistoryEntry): String? = when (e.kind) {
             "$from → " + stationName(e.outArea, e.outLine, e.outStation)
         }
     }
-    // 巴士记录：第 6-7 字节是巴士公司代码，第 8-9 字节是站点码（只有一个站点，没有区间）
+    // Bus records: bytes 6-7 are the operator, bytes 8-9 the stop (a single stop, no route).
     HistoryEntry.Kind.BUS -> {
         val operator = (e.inLine shl 8) or e.inStation
         val stop = (e.outLine shl 8) or e.outStation

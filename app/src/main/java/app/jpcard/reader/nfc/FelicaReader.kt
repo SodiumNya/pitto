@@ -1,22 +1,22 @@
 package app.jpcard.reader.nfc
 
-import androidx.annotation.StringRes
-import app.jpcard.reader.R
-
 import android.nfc.Tag
 import android.nfc.TagLostException
 import android.nfc.tech.NfcF
+import androidx.annotation.StringRes
+import app.jpcard.reader.R
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 
-class CardReadException(@StringRes val reason: Int) : IOException()
+/** A read failure with a user-facing message (string resource). */
+class CardReadException(@get:StringRes val reason: Int) : IOException()
 
 private class FelicaStatusException(val status1: Int, val status2: Int) :
     IOException("FeliCa status %02X %02X".format(status1, status2))
 
 /**
- * 读取交通系 IC 卡（Suica / ICOCA / PASMO 等，均为 CJRC 格式）。
- * 余额与乘车记录是“无需加密即可读取”的服务，不涉及任何密钥。
+ * Reads Japanese transit IC cards (Suica, ICOCA, PASMO, ...; all CJRC format).
+ * Balance and history are services readable without encryption, so no keys are involved.
  */
 object FelicaReader {
     private const val SYSTEM_CJRC = 0x0003
@@ -47,29 +47,29 @@ object FelicaReader {
                 null
             }
             return CardParser.parse(idm, type, history, attribute)
-        } catch (e: TagLostException) {
+        } catch (_: TagLostException) {
             throw CardReadException(R.string.err_tag_lost)
         } catch (e: CardReadException) {
             throw e
-        } catch (e: IOException) {
+        } catch (_: IOException) {
             throw CardReadException(R.string.err_read_failed)
         } finally {
             runCatching { nfcF.close() }
         }
     }
 
-    /** Polling 指定系统码，返回该系统的 IDm；卡上没有该系统时返回 null。 */
+    /** Polls for a system code and returns that system's IDm, or null if the card has no such system. */
     private fun poll(f: NfcF, systemCode: Int): ByteArray? {
         val cmd = byteArrayOf(
             6, 0x00,
             (systemCode shr 8).toByte(), systemCode.toByte(),
-            0x01, // 请求系统码
-            0x00, // 时隙
+            0x01, // request code: system code
+            0x00, // time slot
         )
         val res = try {
             f.transceive(cmd)
         } catch (_: TagLostException) {
-            // 卡片不响应该系统码时，多数手机会表现为 TagLost
+            // When the card does not answer for this system code, most phones report TagLost.
             return null
         }
         if (res.size < 18 || res[1] != 0x01.toByte()) return null
@@ -77,8 +77,8 @@ object FelicaReader {
     }
 
     /**
-     * Request Service（0x02）：一次询问多个服务码是否存在，
-     * 不存在的服务返回密钥版本 0xFFFF。
+     * Request Service (0x02): asks whether several service codes exist in one go.
+     * Missing services report key version 0xFFFF.
      */
     private fun detectType(f: NfcF, idm: ByteArray): CardType {
         val codes = CardType.allProbes
@@ -113,8 +113,8 @@ object FelicaReader {
             try {
                 out += readWithoutEncryption(f, idm, service, start, n)
                 start += n
-            } catch (e: FelicaStatusException) {
-                // 一次读多块不被支持，或读到了不存在的块
+            } catch (_: FelicaStatusException) {
+                // Multi-block reads are unsupported, or we read past the last block.
                 if (n > 1) chunk = 1 else break
             }
         }
@@ -125,15 +125,15 @@ object FelicaReader {
         f: NfcF, idm: ByteArray, service: Int, start: Int, n: Int,
     ): List<ByteArray> {
         val buf = ByteArrayOutputStream()
-        buf.write(0) // 长度占位
+        buf.write(0) // length, filled in below
         buf.write(0x06)
         buf.write(idm)
-        buf.write(1) // 服务数
-        buf.write(service and 0xFF) // 服务码小端序
+        buf.write(1) // number of services
+        buf.write(service and 0xFF) // service code, little-endian
         buf.write((service shr 8) and 0xFF)
         buf.write(n)
         for (i in 0 until n) {
-            buf.write(0x80) // 2 字节块列表元素
+            buf.write(0x80) // 2-byte block list element
             buf.write(start + i)
         }
         val cmd = buf.toByteArray()

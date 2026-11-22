@@ -22,19 +22,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -46,15 +43,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.unit.dp
-import app.jpcard.reader.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.jpcard.reader.R
 
 /**
- * 贴卡提示图：手机正面（屏幕上写着 NFC）+ 左右两组感应波纹。
- * 平时完全静止，不让人误以为一直在读取；只有正在读卡时从手机向外扩散波纹；读取失败时左右抖一下。
+ * Tap hint: a phone front with "NFC" on its screen and waves on both sides.
+ * Static while idle so it never looks busy; ripples only while reading; shakes on a failed read.
  */
 @Composable
 fun TapHint(reading: Boolean, enabled: Boolean, errorTick: Int, modifier: Modifier = Modifier) {
@@ -78,13 +75,13 @@ fun TapHint(reading: Boolean, enabled: Boolean, errorTick: Int, modifier: Modifi
             val h = size.height
             val line = 2.5.dp.toPx()
 
-            // 手机正面，居中
+            // Phone front, centered.
             val phoneSize = Size(w * 0.36f, h * 0.72f)
             val phoneTopLeft = Offset((w - phoneSize.width) / 2, (h - phoneSize.height) / 2)
             val phoneCorner = CornerRadius(10.dp.toPx())
             drawRoundRect(surface, phoneTopLeft, phoneSize, phoneCorner)
             drawRoundRect(color, phoneTopLeft, phoneSize, phoneCorner, style = Stroke(line))
-            // 屏幕
+            // Screen.
             val inset = 5.dp.toPx()
             drawRoundRect(
                 color.copy(alpha = 0.10f),
@@ -92,14 +89,14 @@ fun TapHint(reading: Boolean, enabled: Boolean, errorTick: Int, modifier: Modifi
                 Size(phoneSize.width - inset * 2, phoneSize.height - inset * 2),
                 CornerRadius(6.dp.toPx()),
             )
-            // 前置摄像头开孔
+            // Front camera punch hole.
             drawCircle(
                 color.copy(alpha = 0.6f),
                 radius = 2.dp.toPx(),
                 center = phoneTopLeft + Offset(phoneSize.width / 2, inset + 5.dp.toPx()),
             )
 
-            // 左右两组感应波纹，以手机中心为圆心
+            // Waves on both sides, centered on the phone.
             val c = Offset(w / 2, h / 2)
             for (i in 0..1) {
                 val r = phoneSize.width / 2 + (16 + i * 9).dp.toPx()
@@ -117,7 +114,7 @@ fun TapHint(reading: Boolean, enabled: Boolean, errorTick: Int, modifier: Modifi
                 }
             }
         }
-        // 屏幕上的 NFC 字样
+        // "NFC" on the screen.
         Text(
             "NFC",
             color = color,
@@ -188,9 +185,9 @@ fun Banner(
 }
 
 @Composable
-fun StatusBanners(state: AppState, actions: AppActions, showNfc: Boolean = true) {
+fun StatusBanners(state: MainViewModel, actions: AppActions, showNfc: Boolean = true) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        // 主页的提示卡已经说明了 NFC 状态，避免重复
+        // The home hint card already shows the NFC state; avoid saying it twice.
         if (showNfc) {
             when (state.nfcStatus) {
                 NfcStatus.DISABLED -> Banner(stringResource(R.string.nfc_off), stringResource(R.string.action_turn_on), actions.openNfcSettings)

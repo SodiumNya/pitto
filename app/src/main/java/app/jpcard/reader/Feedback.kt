@@ -17,8 +17,8 @@ import kotlin.math.min
 import kotlin.math.sin
 
 /**
- * 读卡结果反馈：提示音 + 震动。
- * 提示音在代码里合成，不占安装包体积；手机处于静音/震动模式时只震动。
+ * Read result feedback: a short chime plus vibration.
+ * The chime is synthesized in code (no audio assets); in silent/vibrate mode only the vibration plays.
  */
 class Feedback(context: Context) {
     private val audio = context.getSystemService(AudioManager::class.java)
@@ -29,7 +29,7 @@ class Feedback(context: Context) {
     }
     private val handler = Handler(Looper.getMainLooper())
 
-    // 成功：上行的两个柔和音（A5 → D6），失败：下行的两个低音
+    // Success: two soft rising notes (A5 -> D6). Failure: two falling low notes.
     private val successPcm by lazy { chime(listOf(880.0 to 0.08, 1174.7 to 0.16)) }
     private val failurePcm by lazy { chime(listOf(440.0 to 0.09, 349.2 to 0.16)) }
 
@@ -79,7 +79,7 @@ class Feedback(context: Context) {
     private companion object {
         const val RATE = 44100
 
-        /** 合成几个依次响起的音：纯正弦波（不加谐波，避免尖锐），8ms 柔和起音 + 指数衰减。 */
+        /** Synthesizes consecutive notes: pure sine (no harmonics, so not harsh), 8 ms soft attack and exponential decay. */
         fun chime(notes: List<Pair<Double, Double>>): ShortArray {
             val tail = 0.12
             val total = notes.sumOf { it.second } + tail

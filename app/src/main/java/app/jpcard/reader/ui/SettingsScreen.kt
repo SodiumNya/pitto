@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.dp
 import app.jpcard.reader.R
 import app.jpcard.reader.data.AppLanguage
 
-/** 设置页。以后的新功能入口也放在这里，每项一个圆角卡片。 */
+/** Settings screen. Future options also go here, one rounded card per item. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(actions: AppActions) {
