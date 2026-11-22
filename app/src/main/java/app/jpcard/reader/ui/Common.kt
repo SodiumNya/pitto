@@ -100,7 +100,7 @@ fun TapHint(reading: Boolean, enabled: Boolean, errorTick: Int, modifier: Modifi
             // 左右两组感应波纹，以手机中心为圆心
             val c = Offset(w / 2, h / 2)
             for (i in 0..1) {
-                val r = phoneSize.width / 2 + (11 + i * 8).dp.toPx()
+                val r = phoneSize.width / 2 + (16 + i * 9).dp.toPx()
                 val alpha = 0.8f - i * 0.35f
                 for (start in listOf(-30f, 150f)) {
                     drawArc(
