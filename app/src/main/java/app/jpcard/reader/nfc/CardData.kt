@@ -35,5 +35,16 @@ data class HistoryEntry(
     val inArea: Int get() = (region shr 6) and 0x03
     val outArea: Int get() = (region shr 4) and 0x03
 
-    enum class Kind { TRAIN, BUS, SHOPPING, CHARGE, OTHER }
+    /**
+     * 记录类别，用于在列表里用颜色区分。
+     * OTHER 是兜底：没被归类的处理种类都落在这里。
+     * 想从 OTHER 里拆出新类别时：这里加一项 → CardParser.kindOf 加一条规则 → theme 里 kindColor 加一种颜色。
+     */
+    enum class Kind(val label: String) {
+        TRAIN("乘车"),
+        BUS("巴士"),
+        SHOPPING("购物"),
+        CHARGE("充值"),
+        OTHER("其他"),
+    }
 }

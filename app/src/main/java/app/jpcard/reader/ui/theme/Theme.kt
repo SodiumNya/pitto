@@ -7,6 +7,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import app.jpcard.reader.nfc.CardType
+import app.jpcard.reader.nfc.HistoryEntry
 
 private val Light = lightColorScheme(
     primary = Color(0xFF0E7C66),
@@ -39,6 +40,19 @@ fun cardColor(type: CardType): Color = when (type) {
     CardType.SUGOCA -> Color(0xFF1A8CC4)
     CardType.HAYAKAKEN -> Color(0xFFD7263D)
     CardType.UNKNOWN -> Color(0xFF0E7C66)
+}
+
+/** 记录类别的标记色。浅色、深色模式下都清晰；OTHER 用中性灰兜底。 */
+@Composable
+fun kindColor(kind: HistoryEntry.Kind): Color {
+    val dark = isSystemInDarkTheme()
+    return when (kind) {
+        HistoryEntry.Kind.TRAIN -> if (dark) Color(0xFF8AB4F8) else Color(0xFF2F6FDE)
+        HistoryEntry.Kind.BUS -> if (dark) Color(0xFFFFB067) else Color(0xFFD56F00)
+        HistoryEntry.Kind.SHOPPING -> if (dark) Color(0xFFD7A6F2) else Color(0xFF9A46C2)
+        HistoryEntry.Kind.CHARGE -> if (dark) Color(0xFF7FD1B9) else Color(0xFF0E7C66)
+        HistoryEntry.Kind.OTHER -> if (dark) Color(0xFFA0A6B0) else Color(0xFF7A808A)
+    }
 }
 
 /** 收入（充值）用绿色，支出保持正文色，避免满屏红色。 */

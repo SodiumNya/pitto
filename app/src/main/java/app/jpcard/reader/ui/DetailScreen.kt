@@ -62,6 +62,9 @@ import app.jpcard.reader.data.SavedCard
 import app.jpcard.reader.nfc.HistoryEntry
 import app.jpcard.reader.ui.theme.IncomeColor
 import app.jpcard.reader.ui.theme.cardColor
+import app.jpcard.reader.ui.theme.kindColor
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -206,6 +209,18 @@ private fun BalanceHero(card: SavedCard, state: AppState) {
     }
 }
 
+/** 类别色块：浅色底 + 类别首字。 */
+@Composable
+private fun KindBadge(kind: HistoryEntry.Kind) {
+    val color = kindColor(kind)
+    Box(
+        Modifier.size(36.dp).background(color.copy(alpha = 0.14f), RoundedCornerShape(10.dp)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(kind.label.take(1), color = color, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+    }
+}
+
 @Composable
 @Suppress("UNUSED_PARAMETER") // stationsReady 只用来在站名表加载完后触发重组
 private fun HistoryRow(e: HistoryEntry, stationsReady: Boolean) {
@@ -214,6 +229,7 @@ private fun HistoryRow(e: HistoryEntry, stationsReady: Boolean) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        KindBadge(e.kind)
         Column(Modifier.weight(1f)) {
             Text(entryTitle(e), style = MaterialTheme.typography.bodyLarge)
             val sub = listOfNotNull(entryDate(e), entryDetail(e)).joinToString("  ·  ")
