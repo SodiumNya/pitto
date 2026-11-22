@@ -50,11 +50,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 
 /** 卡片在提示图里的中心位置（相对画布宽高），波纹也从这里扩散。 */
-private const val CARD_CX = 0.60f
-private const val CARD_CY = 0.38f
+private const val CARD_CX = 0.66f
+private const val CARD_CY = 0.34f
 
 /**
- * 贴卡提示图：手机背面（带摄像头模组）+ 一张斜放在背面上方的卡片 + 感应弧线，
+ * 贴卡提示图：手机正面 + 一张藏在手机背后、从右侧露出一截的卡片 + 感应弧线，
  * 一眼看出“把卡贴在手机背面”。
  * 平时完全静止，不让人误以为一直在读取；只有正在读卡时卡片处出现扩散波纹；读取失败时左右抖一下。
  */
@@ -77,25 +77,7 @@ fun TapHint(reading: Boolean, enabled: Boolean, errorTick: Int, modifier: Modifi
             val h = size.height
             val line = 2.5.dp.toPx()
 
-            // 手机背面
-            val phoneTopLeft = Offset(w * 0.24f, h * 0.10f)
-            val phoneSize = Size(w * 0.40f, h * 0.80f)
-            val phoneCorner = CornerRadius(10.dp.toPx())
-            drawRoundRect(surface, phoneTopLeft, phoneSize, phoneCorner)
-            drawRoundRect(color, phoneTopLeft, phoneSize, phoneCorner, style = Stroke(line))
-            // 摄像头模组
-            val camTopLeft = phoneTopLeft + Offset(w * 0.05f, h * 0.05f)
-            val camSize = Size(w * 0.11f, h * 0.18f)
-            drawRoundRect(color.copy(alpha = 0.5f), camTopLeft, camSize, CornerRadius(4.dp.toPx()), style = Stroke(2.dp.toPx()))
-            for (i in 0..1) {
-                drawCircle(
-                    color.copy(alpha = 0.5f),
-                    radius = w * 0.025f,
-                    center = camTopLeft + Offset(camSize.width / 2, camSize.height * (0.28f + i * 0.44f)),
-                )
-            }
-
-            // 卡片：斜放在手机背面上方
+            // 先画卡片：它在手机背后，只从右侧露出一截
             val cardW = w * 0.50f
             val cardH = cardW / 1.586f
             val center = Offset(w * CARD_CX, h * CARD_CY)
@@ -111,8 +93,29 @@ fun TapHint(reading: Boolean, enabled: Boolean, errorTick: Int, modifier: Modifi
                 )
             }
 
-            // 感应弧线：卡片右上方
-            val arcCenter = Offset(w * 0.80f, h * 0.20f)
+            // 再画手机正面，盖住卡片的一部分
+            val phoneTopLeft = Offset(w * 0.20f, h * 0.10f)
+            val phoneSize = Size(w * 0.40f, h * 0.80f)
+            val phoneCorner = CornerRadius(10.dp.toPx())
+            drawRoundRect(surface, phoneTopLeft, phoneSize, phoneCorner)
+            drawRoundRect(color, phoneTopLeft, phoneSize, phoneCorner, style = Stroke(line))
+            // 屏幕
+            val inset = 5.dp.toPx()
+            drawRoundRect(
+                color.copy(alpha = 0.10f),
+                phoneTopLeft + Offset(inset, inset),
+                Size(phoneSize.width - inset * 2, phoneSize.height - inset * 2),
+                CornerRadius(6.dp.toPx()),
+            )
+            // 前置摄像头开孔
+            drawCircle(
+                color.copy(alpha = 0.6f),
+                radius = 2.dp.toPx(),
+                center = phoneTopLeft + Offset(phoneSize.width / 2, inset + 5.dp.toPx()),
+            )
+
+            // 感应弧线：露出的卡片右上方
+            val arcCenter = Offset(w * 0.86f, h * 0.17f)
             for (i in 1..2) {
                 val r = (3 + i * 5).dp.toPx()
                 drawArc(
