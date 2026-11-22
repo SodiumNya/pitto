@@ -1,9 +1,6 @@
 package app.jpcard.reader.ui
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -15,61 +12,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.jpcard.reader.data.SavedCard
-import kotlinx.coroutines.launch
-
-private val CardShape = RoundedCornerShape(20.dp)
 
 @Composable
 fun HomeScreen(state: AppState, actions: AppActions) {
-    val snackbar = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-    var renaming by remember { mutableStateOf<SavedCard?>(null) }
-
-    // 删除后给 5 秒撤销机会，比确认弹窗更不打断操作，也能防误触
-    val deleteWithUndo: (SavedCard) -> Unit = { card ->
-        actions.delete(card.idm)
-        scope.launch {
-            snackbar.currentSnackbarData?.dismiss()
-            val r = snackbar.showSnackbar(
-                message = "已删除「${card.name}」",
-                actionLabel = "撤销",
-                duration = SnackbarDuration.Long,
-            )
-            if (r == SnackbarResult.ActionPerformed) actions.restore(card)
-        }
-    }
-
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbar) },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { padding ->
+    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             ReadingBar(state.reading)
             LazyColumn(
@@ -88,41 +45,18 @@ fun HomeScreen(state: AppState, actions: AppActions) {
                 item { HintCard(state) }
                 if (state.cards.isNotEmpty()) {
                     item {
-                        Row(
-                            Modifier.fillMaxWidth().padding(top = 12.dp, start = 4.dp, end = 4.dp),
-                            verticalAlignment = Alignment.Bottom,
-                        ) {
-                            Text(
-                                "我的卡片",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.weight(1f),
-                            )
-                            Text(
-                                "长按可重命名或删除",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.outline,
-                            )
-                        }
+                        Text(
+                            "我的卡片",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 12.dp, start = 4.dp),
+                        )
                     }
                     items(state.cards, key = { it.idm }) { card ->
-                        SavedCardRow(
-                            card = card,
-                            modifier = Modifier.animateItem(),
-                            onClick = { actions.openCard(card.idm) },
-                            onRename = { renaming = card },
-                            onDelete = { deleteWithUndo(card) },
-                        )
+                        SavedCardRow(card, Modifier.animateItem()) { actions.openCard(card.idm) }
                     }
                 }
             }
-        }
-    }
-
-    renaming?.let { card ->
-        RenameDialog(card.name, onDismiss = { renaming = null }) {
-            actions.rename(card.idm, it)
-            renaming = null
         }
     }
 }
@@ -159,48 +93,24 @@ private fun HintCard(state: AppState) {
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun SavedCardRow(
-    card: SavedCard,
-    modifier: Modifier,
-    onClick: () -> Unit,
-    onRename: () -> Unit,
-    onDelete: () -> Unit,
-) {
-    var menu by remember { mutableStateOf(false) }
-    Box(modifier) {
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
-            shape = CardShape,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(CardShape)
-                .combinedClickable(onClick = onClick, onLongClick = { menu = true }),
-        ) {
-            Row(Modifier.padding(horizontal = 20.dp, vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(card.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(
-                        "上次读取 " + readTime(card.data.readAt),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Text(yen(card.data.balance), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+private fun SavedCardRow(card: SavedCard, modifier: Modifier, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(20.dp),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(horizontal = 20.dp, vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(card.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    "上次读取 " + readTime(card.data.readAt),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
-        }
-        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-            DropdownMenuItem(
-                text = { Text("重命名") },
-                leadingIcon = { Icon(Icons.Filled.Edit, null) },
-                onClick = { menu = false; onRename() },
-            )
-            DropdownMenuItem(
-                text = { Text("删除", color = MaterialTheme.colorScheme.error) },
-                leadingIcon = { Icon(Icons.Filled.Delete, null, tint = MaterialTheme.colorScheme.error) },
-                onClick = { menu = false; onDelete() },
-            )
+            Text(yen(card.data.balance), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
         }
     }
 }

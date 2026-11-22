@@ -60,7 +60,6 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
                 state.cards = store.all()
                 if (state.selectedIdm == idm) state.selectedIdm = null
             },
-            restore = { card -> store.restore(card); state.cards = store.all() },
             dismissError = { state.error = null },
             openNfcSettings = { startActivity(Intent(Settings.ACTION_NFC_SETTINGS)) },
         )

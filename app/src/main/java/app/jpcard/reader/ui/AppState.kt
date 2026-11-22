@@ -40,7 +40,6 @@ class AppActions(
     val back: () -> Unit,
     val rename: (String, String) -> Unit,
     val delete: (String) -> Unit,
-    val restore: (SavedCard) -> Unit,
     val dismissError: () -> Unit,
     val openNfcSettings: () -> Unit,
 )
