@@ -22,9 +22,8 @@ OUT = os.path.join(ROOT, "app", "src", "main", "res", "drawable-nodpi", "ic_laun
 
 CANVAS = 432          # 108dp @ xxxhdpi
 ART = CANVAS * 64 // 108   # some launchers (Samsung) mask tighter than the standard 72dp
-# Square region of the 1024x1024 artwork to use: from the cap down to the shoulders.
-# It drops the white corners, the light frame and the "Pitto" lettering at the bottom.
-CROP = (162, 56, 862, 756)
+# Square region of the 1024x1024 artwork to use: head and shoulders.
+CROP = (132, 40, 892, 800)
 
 
 def edge_color(im):
