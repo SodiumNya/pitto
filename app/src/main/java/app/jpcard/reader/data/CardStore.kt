@@ -136,7 +136,7 @@ class CardStore(context: Context) {
                     serial = e.getInt("serial"),
                     region = e.getInt("region"),
                 )
-            }
+            }.filter { it.month != 0 } // 旧版本可能存了空记录位
             val idm = o.getString("idm")
             val type = CardType.fromName(o.optString("type"))
             return SavedCard(

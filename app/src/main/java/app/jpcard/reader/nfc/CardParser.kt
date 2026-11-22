@@ -20,10 +20,16 @@ object CardParser {
     private val CHARGE = setOf(0x02, 0x14, 0x15, 0x1F, 0x48, 0x49)
 
     fun parse(idm: ByteArray, type: CardType, blocks: List<ByteArray>, attribute: ByteArray?): CardData {
-        val raw = blocks.filter { b -> b.any { it.toInt() != 0 } }.map(::parseBlock)
+        // 空的记录位不一定全是 0，以日期字段为空作为判断依据
+        val raw = blocks.filter { be16(it, 4) != 0 }.map(::parseBlock)
         val entries = raw.mapIndexed { i, e ->
             val older = raw.getOrNull(i + 1)
-            e.copy(delta = older?.let { e.balance - it.balance })
+            val delta = when {
+                older != null -> e.balance - older.balance
+                e.process == 0x07 -> e.balance // 新卡发行时的初始余额
+                else -> null
+            }
+            e.copy(delta = delta)
         }
         val balance = entries.firstOrNull()?.balance
             ?: attribute?.let { le16(it, 11) }
