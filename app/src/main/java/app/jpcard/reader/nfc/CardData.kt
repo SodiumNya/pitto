@@ -30,5 +30,9 @@ data class HistoryEntry(
 ) {
     val kind: Kind get() = CardParser.kindOf(this)
 
+    /** 地区码：第 15 字节高 2 位为进站地区，接下来 2 位为出站地区（与卡种无关，取决于乘车地点）。 */
+    val inArea: Int get() = (region shr 6) and 0x03
+    val outArea: Int get() = (region shr 4) and 0x03
+
     enum class Kind { TRAIN, BUS, SHOPPING, CHARGE, OTHER }
 }

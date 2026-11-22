@@ -1,5 +1,6 @@
 package app.jpcard.reader.ui
 
+import app.jpcard.reader.data.Stations
 import app.jpcard.reader.nfc.CardParser
 import app.jpcard.reader.nfc.HistoryEntry
 import java.text.SimpleDateFormat
@@ -35,12 +36,18 @@ fun entryDate(e: HistoryEntry): String {
 
 fun entryTitle(e: HistoryEntry): String = CardParser.processLabel(e.process)
 
-/** 车站数据库接入前，先显示 线区-站 编号。 */
+/** 查不到站名时退回显示 线区-站 编号。 */
+private fun stationName(area: Int, line: Int, station: Int): String =
+    Stations.find(area, line, station)?.name ?: "%d-%d".format(line, station)
+
 fun entryDetail(e: HistoryEntry): String? = when (e.kind) {
     HistoryEntry.Kind.TRAIN -> {
-        val from = "%d-%d".format(e.inLine, e.inStation)
-        val to = "%d-%d".format(e.outLine, e.outStation)
-        if (e.outLine == 0 && e.outStation == 0) "进站 $from" else "$from → $to"
+        val from = stationName(e.inArea, e.inLine, e.inStation)
+        if (e.outLine == 0 && e.outStation == 0) {
+            from
+        } else {
+            "$from → " + stationName(e.outArea, e.outLine, e.outStation)
+        }
     }
     else -> null
 }

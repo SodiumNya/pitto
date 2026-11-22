@@ -11,6 +11,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import app.jpcard.reader.data.CardStore
+import app.jpcard.reader.data.Stations
 import app.jpcard.reader.nfc.CardReadException
 import app.jpcard.reader.nfc.FelicaReader
 import app.jpcard.reader.ui.App
@@ -31,6 +32,13 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
         store = CardStore(this)
         nfc = NfcAdapter.getDefaultAdapter(this)
         state.cards = store.all()
+        state.stationsReady = Stations.loaded
+        if (!Stations.loaded) {
+            Thread {
+                runCatching { Stations.load(applicationContext) }
+                runOnUiThread { state.stationsReady = Stations.loaded }
+            }.start()
+        }
 
         val actions = AppActions(
             openCard = { state.selectedIdm = it },

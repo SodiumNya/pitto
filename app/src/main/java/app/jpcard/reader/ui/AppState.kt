@@ -13,6 +13,8 @@ class AppState {
     var reading by mutableStateOf(false)
     var error by mutableStateOf<String?>(null)
     var nfcStatus by mutableStateOf(NfcStatus.READY)
+    /** 站名表加载完成后置 true，触发界面刷新 */
+    var stationsReady by mutableStateOf(false)
 
     val selected: SavedCard? get() = cards.find { it.idm == selectedIdm }
 }

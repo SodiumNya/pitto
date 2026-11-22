@@ -89,7 +89,7 @@ fun DetailScreen(card: SavedCard, state: AppState, actions: AppActions) {
                     }
                 }
                 itemsIndexed(card.data.history, key = { i, e -> "${e.serial}-$i" }) { i, e ->
-                    HistoryRow(e)
+                    HistoryRow(e, state.stationsReady)
                     if (i < card.data.history.lastIndex) {
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     }
@@ -142,7 +142,8 @@ private fun BalanceHero(card: SavedCard) {
 }
 
 @Composable
-private fun HistoryRow(e: HistoryEntry) {
+@Suppress("UNUSED_PARAMETER") // stationsReady 只用来在站名表加载完后触发重组
+private fun HistoryRow(e: HistoryEntry, stationsReady: Boolean) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
