@@ -23,11 +23,11 @@ object FelicaReader {
     private const val BLOCK_SIZE = 16
 
     fun read(tag: Tag): CardData {
-        val nfcF = NfcF.get(tag) ?: throw CardReadException("不是 FeliCa 卡")
+        val nfcF = NfcF.get(tag) ?: throw CardReadException("无法识别这张卡，请使用交通系 IC 卡")
         try {
             nfcF.connect()
             nfcF.timeout = 1500
-            val idm = poll(nfcF, SYSTEM_CJRC) ?: throw CardReadException("不是交通系 IC 卡")
+            val idm = poll(nfcF, SYSTEM_CJRC) ?: throw CardReadException("这张卡不是交通系 IC 卡")
             val type = try {
                 detectType(nfcF, idm)
             } catch (e: TagLostException) {
@@ -45,11 +45,11 @@ object FelicaReader {
             }
             return CardParser.parse(idm, type, history, attribute)
         } catch (e: TagLostException) {
-            throw CardReadException("卡片离开了，请贴住不动再试一次")
+            throw CardReadException("读取中断，请将卡片贴稳后重试")
         } catch (e: CardReadException) {
             throw e
         } catch (e: IOException) {
-            throw CardReadException("读取失败，请贴住不动再试一次")
+            throw CardReadException("读取失败，请将卡片贴稳后重试")
         } finally {
             runCatching { nfcF.close() }
         }

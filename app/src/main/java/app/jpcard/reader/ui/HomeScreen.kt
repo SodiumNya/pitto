@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -49,8 +50,8 @@ fun HomeScreen(state: AppState, actions: AppActions) {
                         modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
                     )
                 }
-                item { StatusBanners(state, actions) }
-                item { HintCard(state) }
+                item { StatusBanners(state, actions, showNfc = false) }
+                item { HintCard(state, actions) }
                 if (state.cards.isNotEmpty()) {
                     item {
                         Text(
@@ -70,7 +71,7 @@ fun HomeScreen(state: AppState, actions: AppActions) {
 }
 
 @Composable
-private fun HintCard(state: AppState) {
+private fun HintCard(state: AppState, actions: AppActions) {
     val enabled = state.nfcStatus == NfcStatus.READY
     Surface(
         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = if (enabled) 0.5f else 0.2f),
@@ -85,18 +86,27 @@ private fun HintCard(state: AppState) {
             Spacer(Modifier.height(12.dp))
             Text(
                 when {
-                    !enabled -> "NFC 未开启，暂时无法读卡"
-                    state.reading -> "正在读取，请不要移开…"
-                    else -> "把 Suica / ICOCA 贴在手机背面"
+                    state.nfcStatus == NfcStatus.UNSUPPORTED -> "此设备不支持 NFC"
+                    !enabled -> "NFC 已关闭"
+                    state.reading -> "正在读取，请勿移开卡片"
+                    else -> "将交通卡贴近手机背面"
                 },
                 style = MaterialTheme.typography.titleMedium,
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                if (enabled) "一般在摄像头附近，贴住 1 秒" else "开启 NFC 后即可使用",
+                when {
+                    state.nfcStatus == NfcStatus.UNSUPPORTED -> "无法读取交通卡"
+                    !enabled -> "开启 NFC 后即可读卡"
+                    else -> "支持 Suica、ICOCA、PASMO 等交通系 IC 卡"
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (state.nfcStatus == NfcStatus.DISABLED) {
+                Spacer(Modifier.height(8.dp))
+                FilledTonalButton(onClick = actions.openNfcSettings) { Text("开启 NFC") }
+            }
         }
     }
 }
@@ -139,7 +149,7 @@ private fun SavedCardRow(card: SavedCard, faceVersion: Int, modifier: Modifier, 
             Column(Modifier.weight(1f)) {
                 Text(card.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
-                    "上次读取 " + readTime(card.data.readAt),
+                    "更新于 " + readTime(card.data.readAt),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

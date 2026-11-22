@@ -68,7 +68,7 @@ fun CropDialog(source: Bitmap, onCancel: () -> Unit, onConfirm: (Bitmap, android
     Dialog(onDismissRequest = onCancel, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Column(Modifier.fillMaxSize().background(Color.Black).windowInsetsPadding(WindowInsets.safeDrawing)) {
             Text(
-                "拖动、双指缩放来调整卡面",
+                "拖动或双指缩放以调整位置",
                 color = Color.White.copy(alpha = 0.8f),
                 modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 20.dp),
             )

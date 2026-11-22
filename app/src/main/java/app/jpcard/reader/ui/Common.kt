@@ -45,18 +45,24 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 
+/** 卡片在提示图里的中心位置（相对画布宽高），波纹也从这里扩散。 */
+private const val CARD_CX = 0.60f
+private const val CARD_CY = 0.38f
+
 /**
- * 贴卡提示图标。
- * 平时完全静止（卡片 + 非接触符号），不让人误以为一直在读取；
- * 只有正在读卡时才出现扩散波纹；读取失败时左右抖一下。
+ * 贴卡提示图：手机背面（带摄像头模组）+ 一张斜放在背面上方的卡片 + 感应弧线，
+ * 一眼看出“把卡贴在手机背面”。
+ * 平时完全静止，不让人误以为一直在读取；只有正在读卡时卡片处出现扩散波纹；读取失败时左右抖一下。
  */
 @Composable
 fun TapHint(reading: Boolean, enabled: Boolean, errorTick: Int, modifier: Modifier = Modifier) {
     val base = MaterialTheme.colorScheme.primary
     val color = if (enabled) base else MaterialTheme.colorScheme.outline
+    val surface = MaterialTheme.colorScheme.surface
 
     val shake = remember { Animatable(0f) }
     LaunchedEffect(errorTick) {
@@ -64,32 +70,59 @@ fun TapHint(reading: Boolean, enabled: Boolean, errorTick: Int, modifier: Modifi
         for (x in listOf(10f, -8f, 6f, -4f, 0f)) shake.animateTo(x, tween(50))
     }
 
-    Box(modifier.size(120.dp).graphicsLayer { translationX = shake.value.dp.toPx() }) {
+    Box(modifier.size(128.dp).graphicsLayer { translationX = shake.value.dp.toPx() }) {
         if (reading) Ripples(base)
-        Canvas(Modifier.size(120.dp)) {
-            val c = Offset(size.width / 2, size.height / 2)
-            val w = size.width * 0.46f
-            val h = w * 0.63f
-            val left = c.x - w / 2 - 6.dp.toPx()
-            val top = c.y - h / 2
-            drawRoundRect(
-                color = color,
-                topLeft = Offset(left, top),
-                size = Size(w, h),
-                cornerRadius = CornerRadius(7.dp.toPx()),
-            )
-            // 非接触符号的三道弧
-            val cx = left + w + 4.dp.toPx()
-            for (i in 1..3) {
-                val r = (4 + i * 5).dp.toPx()
+        Canvas(Modifier.size(128.dp)) {
+            val w = size.width
+            val h = size.height
+            val line = 2.5.dp.toPx()
+
+            // 手机背面
+            val phoneTopLeft = Offset(w * 0.24f, h * 0.10f)
+            val phoneSize = Size(w * 0.40f, h * 0.80f)
+            val phoneCorner = CornerRadius(10.dp.toPx())
+            drawRoundRect(surface, phoneTopLeft, phoneSize, phoneCorner)
+            drawRoundRect(color, phoneTopLeft, phoneSize, phoneCorner, style = Stroke(line))
+            // 摄像头模组
+            val camTopLeft = phoneTopLeft + Offset(w * 0.05f, h * 0.05f)
+            val camSize = Size(w * 0.11f, h * 0.18f)
+            drawRoundRect(color.copy(alpha = 0.5f), camTopLeft, camSize, CornerRadius(4.dp.toPx()), style = Stroke(2.dp.toPx()))
+            for (i in 0..1) {
+                drawCircle(
+                    color.copy(alpha = 0.5f),
+                    radius = w * 0.025f,
+                    center = camTopLeft + Offset(camSize.width / 2, camSize.height * (0.28f + i * 0.44f)),
+                )
+            }
+
+            // 卡片：斜放在手机背面上方
+            val cardW = w * 0.50f
+            val cardH = cardW / 1.586f
+            val center = Offset(w * CARD_CX, h * CARD_CY)
+            rotate(-14f, pivot = center) {
+                val topLeft = center - Offset(cardW / 2, cardH / 2)
+                val corner = CornerRadius(5.dp.toPx())
+                drawRoundRect(color, topLeft, Size(cardW, cardH), corner)
+                // 卡面上的一道浅色条纹，像真卡
+                drawRect(
+                    Color.White.copy(alpha = 0.35f),
+                    topLeft + Offset(0f, cardH * 0.22f),
+                    Size(cardW, cardH * 0.16f),
+                )
+            }
+
+            // 感应弧线：卡片右上方
+            val arcCenter = Offset(w * 0.80f, h * 0.20f)
+            for (i in 1..2) {
+                val r = (3 + i * 5).dp.toPx()
                 drawArc(
-                    color = color.copy(alpha = 1f - i * 0.22f),
-                    startAngle = -45f,
-                    sweepAngle = 90f,
+                    color = color.copy(alpha = 1f - i * 0.3f),
+                    startAngle = -80f,
+                    sweepAngle = 70f,
                     useCenter = false,
-                    topLeft = Offset(cx - r, c.y - r),
+                    topLeft = arcCenter - Offset(r, r),
                     size = Size(r * 2, r * 2),
-                    style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round),
+                    style = Stroke(width = line, cap = StrokeCap.Round),
                 )
             }
         }
@@ -104,13 +137,13 @@ private fun Ripples(color: Color) {
         infiniteRepeatable(tween(900, easing = LinearEasing), RepeatMode.Restart),
         label = "p",
     )
-    Canvas(Modifier.size(120.dp)) {
-        val c = Offset(size.width / 2, size.height / 2)
+    Canvas(Modifier.size(128.dp)) {
+        val c = Offset(size.width * CARD_CX, size.height * CARD_CY)
         for (i in 0..1) {
             val f = (p + i * 0.5f) % 1f
             drawCircle(
                 color = color.copy(alpha = 0.4f * (1 - f)),
-                radius = size.minDimension * (0.3f + 0.2f * f),
+                radius = size.minDimension * (0.22f + 0.22f * f),
                 center = c,
                 style = Stroke(width = 3.dp.toPx()),
             )
@@ -156,12 +189,15 @@ fun Banner(
 }
 
 @Composable
-fun StatusBanners(state: AppState, actions: AppActions) {
+fun StatusBanners(state: AppState, actions: AppActions, showNfc: Boolean = true) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        when (state.nfcStatus) {
-            NfcStatus.DISABLED -> Banner("NFC 未开启", "去开启", actions.openNfcSettings)
-            NfcStatus.UNSUPPORTED -> Banner("这台手机不支持 NFC，无法读卡")
-            NfcStatus.READY -> Unit
+        // 主页的提示卡已经说明了 NFC 状态，避免重复
+        if (showNfc) {
+            when (state.nfcStatus) {
+                NfcStatus.DISABLED -> Banner("NFC 已关闭", "去开启", actions.openNfcSettings)
+                NfcStatus.UNSUPPORTED -> Banner("此设备不支持 NFC，无法读卡")
+                NfcStatus.READY -> Unit
+            }
         }
         state.error?.let { Banner(it, onClose = actions.dismissError) }
     }

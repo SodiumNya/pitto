@@ -55,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -96,7 +97,7 @@ fun DetailScreen(card: SavedCard, state: AppState, actions: AppActions) {
                 item { BalanceHero(card, state) }
                 item {
                     Text(
-                        "最近记录（卡内最多保存 20 条）",
+                        "最近记录",
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 20.dp, bottom = 8.dp, start = 4.dp),
@@ -117,6 +118,17 @@ fun DetailScreen(card: SavedCard, state: AppState, actions: AppActions) {
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     }
                 }
+                if (card.data.history.isNotEmpty()) {
+                    item {
+                        Text(
+                            "卡片仅保存最近 20 条记录",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
                 item { Spacer(Modifier.height(24.dp)) }
             }
         }
@@ -127,7 +139,7 @@ fun DetailScreen(card: SavedCard, state: AppState, actions: AppActions) {
         AlertDialog(
             onDismissRequest = { deleting = false },
             title = { Text("删除这张卡？") },
-            text = { Text("只会删除本机保存的记录，卡片本身不受影响。") },
+            text = { Text("将从本机移除这张卡的记录和卡面，不影响卡片本身。") },
             confirmButton = {
                 TextButton(onClick = { deleting = false; actions.delete(card.idm) }) { Text("删除") }
             },
@@ -197,7 +209,7 @@ private fun BalanceHero(card: SavedCard, state: AppState) {
                             )
                         } else {
                             Text(
-                                "读取于 " + readTime(card.data.readAt),
+                                "更新于 " + readTime(card.data.readAt),
                                 style = MaterialTheme.typography.bodySmall.copy(shadow = shadow),
                                 color = Color.White.copy(alpha = 0.85f),
                             )
@@ -246,7 +258,7 @@ private fun HistoryRow(e: HistoryEntry, stationsReady: Boolean) {
                 )
             }
             Text(
-                "余 " + yen(e.balance),
+                "余额 " + yen(e.balance),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

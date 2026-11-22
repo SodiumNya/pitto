@@ -94,7 +94,7 @@ fun EditCardSheet(card: SavedCard, state: AppState, actions: AppActions, onDismi
                 }
             }
             Text(
-                "选图后可以拖动、缩放和旋转，图片只保存在本机。",
+                "选择图片后可调整位置和方向，图片仅保存在本机。",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.align(Alignment.CenterHorizontally),
