@@ -34,6 +34,6 @@
 重新生成：
 
 ```powershell
-python -I tools\gen_stations.py <felica_stations.db3 路径> app\src\main\assets\stations.tsv
+python -I tools\gen_stations.py <felica_stations.db3 路径> app\src\main\assets
 ```
 - `ui/`：Compose 界面
