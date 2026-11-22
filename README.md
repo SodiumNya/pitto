@@ -23,7 +23,22 @@
 - `nfc/FelicaReader.kt`：FeliCa 底层通信（Polling、Read Without Encryption）
 - `nfc/CardParser.kt`：CJRC 格式解析（余额、记录、处理种类）
 - `data/CardStore.kt`：本机保存读过的卡
-- `data/Stations.kt` + `assets/stations.tsv`：站名表，用“地区 + 线区 + 站”三个码查询
+- `data/Stations.kt` + `assets/stations.tsv` / `bus.tsv`：站名表和巴士表
+- `data/CardFaces.kt`：自定义卡面
+- `ui/`：Compose 界面
+
+## 签名
+
+debug 和 release 都用正式密钥签名（两者可以互相覆盖安装）：
+
+| 内容 | 位置 |
+|---|---|
+| 密钥库 | `F:\dev\keys\pitto-release.jks` |
+| 密码等配置 | `F:\dev\keys\pitto-signing.properties` |
+| 引用方式 | `local.properties` 里的 `pitto.signing=...`（不进 git） |
+
+**务必备份 `F:\dev\keys` 整个文件夹**（例如网盘或 U 盘）。丢了密钥就无法再给已安装的 app 升级，只能卸载重装。
+找不到这些文件时会自动退回 debug 签名，不影响编译。
 
 ## 站名数据
 
@@ -36,4 +51,3 @@
 ```powershell
 python -I tools\gen_stations.py <felica_stations.db3 路径> app\src\main\assets
 ```
-- `ui/`：Compose 界面

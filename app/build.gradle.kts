@@ -45,6 +45,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            // 与 release 用同一把密钥，两种版本可以互相覆盖安装，不会因签名不同被迫卸载丢数据
+            signingConfigs.findByName("release")?.let { signingConfig = it }
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
