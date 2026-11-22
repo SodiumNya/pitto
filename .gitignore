@@ -13,3 +13,6 @@ signing.properties
 
 # Personal notes for this machine (paths, signing key location)
 LOCAL_SETUP.md
+
+# Release APKs to upload to GitHub Releases
+dist/
