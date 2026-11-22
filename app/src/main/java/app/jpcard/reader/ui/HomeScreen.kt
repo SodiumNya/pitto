@@ -44,7 +44,7 @@ fun HomeScreen(state: AppState, actions: AppActions) {
             ) {
                 item {
                     Text(
-                        "交通卡余额",
+                        "Pitto",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),

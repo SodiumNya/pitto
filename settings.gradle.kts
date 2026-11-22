@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "JpCardReader"
+rootProject.name = "Pitto"
 include(":app")

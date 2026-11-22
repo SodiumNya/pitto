@@ -1,4 +1,4 @@
-# 交通卡余额（JpCardReader）
+# Pitto（交通卡余额）
 
 读取 Suica / ICOCA 余额和最近 20 条记录的安卓 app。Kotlin + Jetpack Compose，离线使用，只需要 NFC 权限。
 
