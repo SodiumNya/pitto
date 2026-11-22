@@ -2,6 +2,7 @@ package app.jpcard.reader.data
 
 import android.content.Context
 import app.jpcard.reader.nfc.CardData
+import app.jpcard.reader.nfc.CardType
 import app.jpcard.reader.nfc.HistoryEntry
 import org.json.JSONArray
 import org.json.JSONObject
@@ -24,11 +25,13 @@ class CardStore(context: Context) {
         }.getOrDefault(emptyList()).sortedByDescending { it.data.readAt }
     }
 
-    /** 保存读卡结果，保留已有的备注名。 */
+    /** 保存读卡结果，保留用户改过的名字；还是默认名的就按（新识别出的）卡种更新。 */
     fun save(data: CardData): SavedCard {
         val cards = all().toMutableList()
         val old = cards.find { it.idm == data.idm }
-        val card = SavedCard(data.idm, old?.name ?: defaultName(data.idm), data)
+        val keepName = old != null && !isDefaultName(old.name, old.idm)
+        val name = if (keepName) old!!.name else defaultName(data.idm, data.type)
+        val card = SavedCard(data.idm, name, data)
         cards.removeAll { it.idm == data.idm }
         cards.add(0, card)
         write(cards)
@@ -36,12 +39,13 @@ class CardStore(context: Context) {
     }
 
     fun rename(idm: String, name: String) {
-        write(all().map { if (it.idm == idm) it.copy(name = name.ifBlank { defaultName(idm) }) else it })
+        write(all().map { if (it.idm == idm) it.copy(name = name.ifBlank { defaultName(idm, it.data.type) }) else it })
     }
 
     fun delete(idm: String) {
         write(all().filterNot { it.idm == idm })
     }
+
     private fun write(cards: List<SavedCard>) {
         val arr = JSONArray()
         cards.forEach { arr.put(toJson(it)) }
@@ -51,7 +55,11 @@ class CardStore(context: Context) {
     companion object {
         private const val KEY = "cards_v1"
 
-        fun defaultName(idm: String) = "交通卡 · ${idm.takeLast(4)}"
+        fun defaultName(idm: String, type: CardType) = "${type.label} · ${idm.takeLast(4)}"
+
+        /** 旧版本的默认名“交通卡 · XXXX”或任一卡种的默认名，都视为用户没改过。 */
+        private fun isDefaultName(name: String, idm: String) =
+            name == "交通卡 · ${idm.takeLast(4)}" || CardType.entries.any { name == defaultName(idm, it) }
 
         private val FIELDS = listOf(
             "terminal", "process", "year", "month", "day", "hour", "minute",
@@ -61,6 +69,7 @@ class CardStore(context: Context) {
         private fun toJson(c: SavedCard) = JSONObject().apply {
             put("idm", c.idm)
             put("name", c.name)
+            put("type", c.data.type.name)
             put("balance", c.data.balance)
             put("readAt", c.data.readAt)
             put("history", JSONArray().apply {
@@ -100,10 +109,11 @@ class CardStore(context: Context) {
                 )
             }
             val idm = o.getString("idm")
+            val type = CardType.fromName(o.optString("type"))
             return SavedCard(
                 idm = idm,
-                name = o.optString("name", defaultName(idm)),
-                data = CardData(idm, o.getInt("balance"), history, o.getLong("readAt")),
+                name = o.optString("name", defaultName(idm, type)),
+                data = CardData(idm, type, o.getInt("balance"), history, o.getLong("readAt")),
             )
         }
     }

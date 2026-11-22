@@ -28,6 +28,13 @@ object FelicaReader {
             nfcF.connect()
             nfcF.timeout = 1500
             val idm = poll(nfcF, SYSTEM_CJRC) ?: throw CardReadException("不是交通系 IC 卡")
+            val type = try {
+                detectType(nfcF, idm)
+            } catch (e: TagLostException) {
+                throw e
+            } catch (_: IOException) {
+                CardType.UNKNOWN
+            }
             val history = readBlocks(nfcF, idm, SERVICE_HISTORY, HISTORY_BLOCKS)
             val attribute = try {
                 readBlocks(nfcF, idm, SERVICE_ATTRIBUTE, 1).firstOrNull()
@@ -36,7 +43,7 @@ object FelicaReader {
             } catch (_: IOException) {
                 null
             }
-            return CardParser.parse(idm, history, attribute)
+            return CardParser.parse(idm, type, history, attribute)
         } catch (e: TagLostException) {
             throw CardReadException("卡片离开了，请贴住不动再试一次")
         } catch (e: CardReadException) {
@@ -64,6 +71,34 @@ object FelicaReader {
         }
         if (res.size < 18 || res[1] != 0x01.toByte()) return null
         return res.copyOfRange(2, 10)
+    }
+
+    /**
+     * Request Service（0x02）：一次询问多个服务码是否存在，
+     * 不存在的服务返回密钥版本 0xFFFF。
+     */
+    private fun detectType(f: NfcF, idm: ByteArray): CardType {
+        val codes = CardType.allProbes
+        val buf = ByteArrayOutputStream()
+        buf.write(0)
+        buf.write(0x02)
+        buf.write(idm)
+        buf.write(codes.size)
+        for (c in codes) {
+            buf.write(c and 0xFF)
+            buf.write((c shr 8) and 0xFF)
+        }
+        val cmd = buf.toByteArray()
+        cmd[0] = cmd.size.toByte()
+
+        val res = f.transceive(cmd)
+        if (res.size < 11 + codes.size * 2 || res[1] != 0x03.toByte()) return CardType.UNKNOWN
+        val exists = BooleanArray(codes.size) { i ->
+            val lo = res[11 + i * 2].toInt() and 0xFF
+            val hi = res[12 + i * 2].toInt() and 0xFF
+            (hi shl 8 or lo) != 0xFFFF
+        }
+        return CardType.fromProbeResult(exists)
     }
 
     private fun readBlocks(f: NfcF, idm: ByteArray, service: Int, count: Int): List<ByteArray> {

@@ -56,6 +56,8 @@ import androidx.compose.ui.unit.sp
 import app.jpcard.reader.data.SavedCard
 import app.jpcard.reader.nfc.HistoryEntry
 import app.jpcard.reader.ui.theme.IncomeColor
+import app.jpcard.reader.ui.theme.cardColor
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -146,8 +148,8 @@ private fun BalanceHero(card: SavedCard, state: AppState) {
     }
 
     Surface(
-        color = MaterialTheme.colorScheme.primary,
-        contentColor = MaterialTheme.colorScheme.onPrimary,
+        color = cardColor(card.data.type),
+        contentColor = Color.White,
         shape = RoundedCornerShape(24.dp),
         modifier = Modifier
             .fillMaxWidth()
@@ -155,7 +157,7 @@ private fun BalanceHero(card: SavedCard, state: AppState) {
             .graphicsLayer { scaleX = scale.value; scaleY = scale.value },
     ) {
         Column(Modifier.padding(24.dp)) {
-            Text("余额", style = MaterialTheme.typography.labelLarge)
+            Text(card.data.type.label + " · 余额", style = MaterialTheme.typography.labelLarge)
             Text(
                 yen(card.data.balance),
                 fontSize = 44.sp,
@@ -176,7 +178,7 @@ private fun BalanceHero(card: SavedCard, state: AppState) {
                         Text(
                             "读取于 " + readTime(card.data.readAt),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
+                            color = Color.White.copy(alpha = 0.85f),
                         )
                     }
                 }

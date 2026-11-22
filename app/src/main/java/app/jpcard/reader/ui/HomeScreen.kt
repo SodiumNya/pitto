@@ -23,6 +23,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.jpcard.reader.data.SavedCard
+import app.jpcard.reader.nfc.CardType
+import app.jpcard.reader.ui.theme.cardColor
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun HomeScreen(state: AppState, actions: AppActions) {
@@ -93,6 +101,25 @@ private fun HintCard(state: AppState) {
     }
 }
 
+/** 卡种小卡面：代表色 + 卡名。 */
+@Composable
+private fun MiniCard(type: CardType) {
+    Box(
+        Modifier
+            .size(width = 52.dp, height = 34.dp)
+            .background(cardColor(type), RoundedCornerShape(6.dp)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            type.label,
+            color = Color.White,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+        )
+    }
+}
+
 @Composable
 private fun SavedCardRow(card: SavedCard, modifier: Modifier, onClick: () -> Unit) {
     Surface(
@@ -101,7 +128,9 @@ private fun SavedCardRow(card: SavedCard, modifier: Modifier, onClick: () -> Uni
         shape = RoundedCornerShape(20.dp),
         modifier = modifier.fillMaxWidth(),
     ) {
-        Row(Modifier.padding(horizontal = 20.dp, vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            MiniCard(card.data.type)
+            Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 Text(card.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(

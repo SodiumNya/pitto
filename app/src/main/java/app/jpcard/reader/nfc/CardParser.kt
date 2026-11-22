@@ -19,7 +19,7 @@ object CardParser {
     private val BUS = setOf(0x0D, 0x0F, 0x1F, 0x23)
     private val CHARGE = setOf(0x02, 0x14, 0x15, 0x1F, 0x48, 0x49)
 
-    fun parse(idm: ByteArray, blocks: List<ByteArray>, attribute: ByteArray?): CardData {
+    fun parse(idm: ByteArray, type: CardType, blocks: List<ByteArray>, attribute: ByteArray?): CardData {
         val raw = blocks.filter { b -> b.any { it.toInt() != 0 } }.map(::parseBlock)
         val entries = raw.mapIndexed { i, e ->
             val older = raw.getOrNull(i + 1)
@@ -30,6 +30,7 @@ object CardParser {
             ?: 0
         return CardData(
             idm = idm.joinToString("") { "%02X".format(it) },
+            type = type,
             balance = balance,
             history = entries,
             readAt = System.currentTimeMillis(),

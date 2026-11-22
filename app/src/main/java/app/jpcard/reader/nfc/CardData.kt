@@ -3,6 +3,7 @@ package app.jpcard.reader.nfc
 /** 一次读卡的结果。 */
 data class CardData(
     val idm: String,
+    val type: CardType,
     val balance: Int,
     val history: List<HistoryEntry>,
     val readAt: Long,

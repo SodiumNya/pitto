@@ -6,6 +6,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import app.jpcard.reader.nfc.CardType
 
 private val Light = lightColorScheme(
     primary = Color(0xFF0E7C66),
@@ -24,6 +25,21 @@ private val Dark = darkColorScheme(
     background = Color(0xFF121212),
     surface = Color(0xFF121212),
 )
+
+/** 各卡种的卡面主色（取各卡的代表色，近似值；不使用任何官方标志）。白色文字都能看清。 */
+fun cardColor(type: CardType): Color = when (type) {
+    CardType.SUICA -> Color(0xFF00924A)
+    CardType.ICOCA -> Color(0xFF0071BC)
+    CardType.PASMO -> Color(0xFFD6006F)
+    CardType.TOICA -> Color(0xFFD96A00)
+    CardType.MANACA -> Color(0xFF7B4BA0)
+    CardType.KITACA -> Color(0xFF4F8A2B)
+    CardType.NIMOCA -> Color(0xFFC08000)
+    CardType.PITAPA -> Color(0xFF1F3A68)
+    CardType.SUGOCA -> Color(0xFF1A8CC4)
+    CardType.HAYAKAKEN -> Color(0xFFD7263D)
+    CardType.UNKNOWN -> Color(0xFF0E7C66)
+}
 
 /** 收入（充值）用绿色，支出保持正文色，避免满屏红色。 */
 val IncomeColor @Composable get() = if (isSystemInDarkTheme()) Color(0xFF7FD1B9) else Color(0xFF0E7C66)
