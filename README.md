@@ -11,16 +11,17 @@
 
 ---
 
-Tap a card on the back of your phone and Pitto shows its balance and the last 20 records stored on the card,
-with station names. It works fully offline and only needs the NFC permission.
+Tap a card on the back of your phone and Pitto shows its balance and trip history with station names.
+It works fully offline and only needs the NFC permission.
 
 It is especially handy for visitors to Japan: phones bought outside Japan usually cannot add Suica to Google Wallet,
 but their NFC can still read a physical card.
 
 ## Features
 
-- Balance and the 20 most recent records (rides, buses, top-ups, purchases) with color-coded categories
-- Station names for rail rides, operator (and stop where known) for bus rides
+- Balance and trip history (rides, buses, top-ups, purchases) with color-coded categories
+- History beyond the card's 20-record limit: older records are kept on your phone each time you read the card
+- Station names for rail rides, operator (and stop where known) for bus rides; optional English station names
 - Detects the card type: Suica, ICOCA, PASMO, TOICA, manaca, Kitaca, nimoca, PiTaPa, SUGOCA, Hayakaken
 - Remembers your cards; rename them and set your own card face (crop and rotate a photo)
 - Sound and vibration feedback, live NFC on/off state
@@ -33,6 +34,10 @@ Pitto only reads data that the cards expose without encryption. It cannot top up
 
 Get the APK from [Releases](../../releases). Requires Android 8.0+ and a phone with NFC.
 
+Pitto has no network permission, so it never checks for updates by itself. **Settings → Check for updates**
+opens the Releases page in your browser. For automatic update notifications, add this repository to
+[Obtainium](https://github.com/ImranR98/Obtainium).
+
 ## Building
 
 Requirements: JDK 17 and the Android SDK (platform 36). Set `JAVA_HOME` and `ANDROID_HOME`.
@@ -40,6 +45,7 @@ Requirements: JDK 17 and the Android SDK (platform 36). Set `JAVA_HOME` and `AND
 ```sh
 ./gradlew assembleDebug          # app/build/outputs/apk/debug/
 ./gradlew installDebug           # install on a connected phone
+./gradlew testDebugUnitTest      # unit tests (parser, card type detection, history merge)
 ```
 
 Release builds are signed with the debug key unless `pitto.signing` in `local.properties` points to a
@@ -64,7 +70,7 @@ app/src/main/java/app/jpcard/reader/
 └── ui/                    Jetpack Compose screens; MainViewModel holds state and logic
 tools/
 ├── gen_strings.py         single source of all UI text in every language
-├── gen_stations.py        builds assets/stations.tsv and bus.tsv
+├── gen_stations.py        builds assets/stations.tsv and bus.tsv (English names from Wikidata)
 └── gen_icon.py            builds the launcher icon from tools/art/mascot_source.png
 ```
 
@@ -83,6 +89,7 @@ stations correctly.
 - Station and bus stop data, and the issuer service code lists, come from
   [Metrodroid](https://github.com/metrodroid/metrodroid) (GPL-3.0-or-later), originally from FareBot and the
   IC SFCard Fan station code list.
+- English station names come from [Wikidata](https://www.wikidata.org/) (CC0).
 - Suica, ICOCA, PASMO and other card names are trademarks of their respective owners. Pitto is not affiliated
   with any of them and uses no official logos.
 

@@ -1,6 +1,7 @@
 package app.jpcard.reader.ui
 
 import android.app.Application
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.net.Uri
@@ -36,6 +37,7 @@ enum class NfcStatus { READY, DISABLED, UNSUPPORTED }
  */
 class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val store = CardStore(app)
+    private val prefs = app.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
     var cards by mutableStateOf(store.all())
         private set
@@ -46,6 +48,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     var reading by mutableStateOf(false)
         private set
     var nfcStatus by mutableStateOf(NfcStatus.READY)
+
+    /** Show station and bus operator names in English instead of Japanese (off by default). */
+    var englishStationNames by mutableStateOf(prefs.getBoolean(KEY_ENGLISH_NAMES, false))
+        private set
 
     /** String resource of the error banner, or null when there is none. */
     @get:StringRes
@@ -136,6 +142,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         error = null
     }
 
+    fun changeEnglishStationNames(on: Boolean) {
+        englishStationNames = on
+        prefs.edit().putBoolean(KEY_ENGLISH_NAMES, on).apply()
+    }
+
     // ---- Card management ----
 
     fun rename(idm: String, name: String) {
@@ -181,5 +192,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun clearFace(idm: String) {
         CardFaces.delete(getApplication(), idm)
         faceVersion++
+    }
+
+    private companion object {
+        const val KEY_ENGLISH_NAMES = "english_station_names"
     }
 }

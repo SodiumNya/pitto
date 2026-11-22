@@ -16,6 +16,7 @@ class AppActions(
     val back: () -> Unit,
     val openSettings: () -> Unit,
     val setLanguage: (tag: String) -> Unit,
+    val setEnglishStationNames: (on: Boolean) -> Unit,
     val rename: (idm: String, name: String) -> Unit,
     val delete: (idm: String) -> Unit,
     val pickFace: (idm: String, uri: Uri) -> Unit,
@@ -24,6 +25,7 @@ class AppActions(
     val clearFace: (idm: String) -> Unit,
     val dismissError: () -> Unit,
     val openNfcSettings: () -> Unit,
+    val openReleases: () -> Unit,
 )
 
 private const val SETTINGS = "#settings"
@@ -40,7 +42,7 @@ fun App(state: MainViewModel, actions: AppActions) {
         label = "screen",
     ) { key ->
         if (key == SETTINGS) {
-            SettingsScreen(actions)
+            SettingsScreen(state, actions)
         } else {
             val card = state.cards.find { it.idm == key }
             if (card == null) {

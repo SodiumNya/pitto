@@ -42,7 +42,8 @@ class CardStore(context: Context) {
             isSchemeName(old.name, data.type) && old.name !in taken -> old.name
             else -> nextDefaultName(data.type, taken)
         }
-        val card = SavedCard(data.idm, name, data)
+        val merged = data.copy(history = mergeHistory(data.history, old?.data?.history.orEmpty()))
+        val card = SavedCard(data.idm, name, merged)
         cards.add(0, card)
         write(cards)
         return card
@@ -68,6 +69,27 @@ class CardStore(context: Context) {
 
     companion object {
         private const val KEY = "cards_v1"
+
+        /** Records kept per card. The card holds 20; older ones accumulate here across reads. */
+        private const val MAX_HISTORY = 1000
+
+        /**
+         * Merges a fresh read (the card's latest 20 records) with the records saved from earlier
+         * reads, so history is not limited to what the card still holds. Records are matched by
+         * the card's transaction serial plus date and balance; when both copies exist, the one
+         * with a known amount wins (the oldest record of a read has none).
+         */
+        fun mergeHistory(fresh: List<HistoryEntry>, saved: List<HistoryEntry>): List<HistoryEntry> {
+            fun HistoryEntry.id() = "$serial/$year-$month-$day/$balance"
+            val byId = LinkedHashMap<String, HistoryEntry>()
+            for (e in fresh + saved) {
+                val existing = byId[e.id()]
+                if (existing == null || (existing.delta == null && e.delta != null)) byId[e.id()] = e
+            }
+            return byId.values
+                .sortedWith(compareByDescending<HistoryEntry> { it.serial }.thenByDescending { it.year * 10000 + it.month * 100 + it.day })
+                .take(MAX_HISTORY)
+        }
 
         /** The first card is "Suica"; further cards of the same type are "Suica 2", "Suica 3", ... */
         fun nextDefaultName(type: CardType, taken: Set<String>): String {

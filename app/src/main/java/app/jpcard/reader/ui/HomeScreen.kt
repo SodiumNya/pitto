@@ -80,7 +80,6 @@ fun HomeScreen(state: MainViewModel, actions: AppActions) {
                         SavedCardRow(card, state.faceVersion, Modifier.animateItem()) { actions.openCard(card.idm) }
                     }
                 }
-                item { AboutFooter() }
             }
         }
     }
@@ -175,29 +174,5 @@ private fun SavedCardRow(card: SavedCard, faceVersion: Int, modifier: Modifier, 
             }
             Text(yen(card.data.balance), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
         }
-    }
-}
-
-/** Footer: version, copyright and data attribution (the station data is GPL-3.0 and must be credited). */
-@Composable
-private fun AboutFooter() {
-    val context = LocalContext.current
-    val version = remember {
-        runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: ""
-    }
-    Column(
-        Modifier.fillMaxWidth().padding(top = 32.dp, bottom = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            "Pitto $version · © 2026",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.outline,
-        )
-        Text(
-            stringResource(R.string.footer_data),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.outline,
-        )
     }
 }

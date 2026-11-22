@@ -53,23 +53,25 @@ fun entryDate(e: HistoryEntry): String {
 fun entryTitle(e: HistoryEntry): Int = CardParser.processLabel(e.process)
 
 /** Falls back to "line-station" numbers when the station is unknown. */
-private fun stationName(area: Int, line: Int, station: Int): String =
-    Stations.find(area, line, station)?.name ?: "%d-%d".format(line, station)
+private fun stationName(area: Int, line: Int, station: Int, english: Boolean): String =
+    Stations.find(area, line, station)?.displayName(english) ?: "%d-%d".format(line, station)
 
-fun entryDetail(e: HistoryEntry): String? = when (e.kind) {
+/** Route or bus operator for a record; Japanese names unless [english] is on. */
+fun entryDetail(e: HistoryEntry, english: Boolean): String? = when (e.kind) {
     HistoryEntry.Kind.TRAIN -> {
-        val from = stationName(e.inArea, e.inLine, e.inStation)
+        val from = stationName(e.inArea, e.inLine, e.inStation, english)
         if (e.outLine == 0 && e.outStation == 0) {
             from
         } else {
-            "$from → " + stationName(e.outArea, e.outLine, e.outStation)
+            "$from → " + stationName(e.outArea, e.outLine, e.outStation, english)
         }
     }
     // Bus records: bytes 6-7 are the operator, bytes 8-9 the stop (a single stop, no route).
+    // Stop names exist in Japanese only.
     HistoryEntry.Kind.BUS -> {
         val operator = (e.inLine shl 8) or e.inStation
         val stop = (e.outLine shl 8) or e.outStation
-        listOfNotNull(Stations.busCompany(operator), Stations.busStop(operator, stop))
+        listOfNotNull(Stations.busOperator(operator)?.displayName(english), Stations.busStop(operator, stop))
             .joinToString(" · ")
             .ifEmpty { null }
     }

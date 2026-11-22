@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.nfc.NfcAdapter
 import android.nfc.Tag
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -53,6 +54,7 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
             back = vm::back,
             openSettings = vm::openSettings,
             setLanguage = { tag -> AppLanguage.set(this, tag) },
+            setEnglishStationNames = vm::changeEnglishStationNames,
             rename = vm::rename,
             delete = vm::delete,
             pickFace = vm::pickFace,
@@ -61,6 +63,9 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
             clearFace = vm::clearFace,
             dismissError = vm::dismissError,
             openNfcSettings = { startActivity(Intent(Settings.ACTION_NFC_SETTINGS)) },
+            openReleases = {
+                runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(RELEASES_URL))) }
+            },
         )
         setContent { AppTheme { App(vm, actions) } }
 
@@ -135,5 +140,10 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
             vm.onReadFinished(result)
             if (result.isSuccess) feedback.success() else feedback.failure()
         }
+    }
+
+    private companion object {
+        /** Where new versions are published. */
+        const val RELEASES_URL = "https://github.com/SodiumNya/pitto/releases/latest"
     }
 }

@@ -1,5 +1,6 @@
 package app.jpcard.reader.ui
 
+import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -40,7 +42,7 @@ import app.jpcard.reader.data.AppLanguage
 /** Settings screen. Future options also go here, one rounded card per item. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(actions: AppActions) {
+fun SettingsScreen(state: MainViewModel, actions: AppActions) {
     val context = LocalContext.current
     val current = remember { AppLanguage.current(context) }
     var picking by remember { mutableStateOf(false) }
@@ -67,6 +69,32 @@ fun SettingsScreen(actions: AppActions) {
                 title = stringResource(R.string.language),
                 value = AppLanguage.label(context, current),
                 onClick = { picking = true },
+            )
+            SwitchRow(
+                title = stringResource(R.string.english_station_names),
+                summary = stringResource(R.string.english_station_names_desc),
+                checked = state.englishStationNames,
+                onChange = actions.setEnglishStationNames,
+            )
+
+            Text(
+                stringResource(R.string.about),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 12.dp, start = 4.dp),
+            )
+            // Pitto has no network permission, so updates are checked in the browser
+            // (GitHub Releases) instead of by the app itself.
+            SettingRow(
+                title = stringResource(R.string.check_updates),
+                value = stringResource(R.string.version, appVersion(context)),
+                onClick = actions.openReleases,
+            )
+            Text(
+                stringResource(R.string.footer_data),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.padding(horizontal = 4.dp),
             )
         }
     }
@@ -101,6 +129,28 @@ fun SettingsScreen(actions: AppActions) {
         )
     }
 }
+
+@Composable
+private fun SwitchRow(title: String, summary: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Surface(
+        onClick = { onChange(!checked) },
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(start = 20.dp, end = 16.dp, top = 14.dp, bottom = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleMedium)
+                Text(summary, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Spacer(Modifier.width(12.dp))
+            Switch(checked = checked, onCheckedChange = null)
+        }
+    }
+}
+
+private fun appVersion(context: Context): String =
+    runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull().orEmpty()
 
 @Composable
 private fun SettingRow(title: String, value: String, onClick: () -> Unit) {

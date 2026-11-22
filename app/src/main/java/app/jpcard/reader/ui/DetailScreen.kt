@@ -113,7 +113,7 @@ fun DetailScreen(card: SavedCard, state: MainViewModel, actions: AppActions) {
                     }
                 }
                 itemsIndexed(card.data.history, key = { i, e -> "${e.serial}-$i" }) { i, e ->
-                    HistoryRow(e, state.stationsReady)
+                    HistoryRow(e, state.stationsReady, state.englishStationNames)
                     if (i < card.data.history.lastIndex) {
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     }
@@ -235,7 +235,7 @@ private fun KindBadge(kind: HistoryEntry.Kind) {
 
 /** One history record. [stationsReady] is part of the cache key so names appear once the table loads. */
 @Composable
-private fun HistoryRow(e: HistoryEntry, stationsReady: Boolean) {
+private fun HistoryRow(e: HistoryEntry, stationsReady: Boolean, englishNames: Boolean) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -244,7 +244,7 @@ private fun HistoryRow(e: HistoryEntry, stationsReady: Boolean) {
         KindBadge(e.kind)
         Column(Modifier.weight(1f)) {
             Text(stringResource(entryTitle(e)), style = MaterialTheme.typography.bodyLarge)
-            val detail = remember(e, stationsReady) { entryDetail(e) }
+            val detail = remember(e, stationsReady, englishNames) { entryDetail(e, englishNames) }
             val sub = listOfNotNull(entryDate(e), detail).joinToString("  ·  ")
             Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
