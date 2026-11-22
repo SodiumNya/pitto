@@ -1,11 +1,15 @@
 package app.jpcard.reader.ui
 
+import android.graphics.Bitmap
+import android.graphics.Rect
 import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import app.jpcard.reader.data.SavedCard
+
+class CropRequest(val idm: String, val bitmap: Bitmap)
 
 enum class NfcStatus { READY, DISABLED, UNSUPPORTED }
 
@@ -22,6 +26,8 @@ class AppState {
     var faceVersion by mutableIntStateOf(0)
     /** 正在处理用户选的卡面图片 */
     var faceBusy by mutableStateOf(false)
+    /** 非 null 时显示裁剪界面 */
+    var crop by mutableStateOf<CropRequest?>(null)
 
     /** 每次读卡失败 +1，用来触发提示图标的抖动 */
     var errorTick by mutableIntStateOf(0)
@@ -47,6 +53,8 @@ class AppActions(
     val rename: (String, String) -> Unit,
     val delete: (String) -> Unit,
     val setFace: (String, Uri) -> Unit,
+    val confirmCrop: (Bitmap, Rect) -> Unit,
+    val cancelCrop: () -> Unit,
     val clearFace: (String) -> Unit,
     val dismissError: () -> Unit,
     val openNfcSettings: () -> Unit,

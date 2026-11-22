@@ -94,7 +94,7 @@ fun EditCardSheet(card: SavedCard, state: AppState, actions: AppActions, onDismi
                 }
             }
             Text(
-                "图片会自动居中裁剪成卡片比例，只保存在本机。",
+                "选图后可以拖动、缩放和旋转，图片只保存在本机。",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.align(Alignment.CenterHorizontally),

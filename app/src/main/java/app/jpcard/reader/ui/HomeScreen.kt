@@ -108,9 +108,9 @@ private fun MiniCard(card: SavedCard, faceVersion: Int) {
     CardFaceBox(
         type = card.data.type,
         face = face,
-        shape = RoundedCornerShape(6.dp),
+        shape = RoundedCornerShape(5.dp),
         scrim = false,
-        modifier = Modifier.size(width = 54.dp, height = 34.dp),
+        modifier = Modifier.size(width = 65.dp, height = 26.dp),
     ) {
         if (face == null) {
             Text(

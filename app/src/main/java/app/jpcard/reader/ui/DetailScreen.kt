@@ -157,7 +157,7 @@ private fun BalanceHero(card: SavedCard, state: AppState) {
     CardFaceBox(
         type = card.data.type,
         face = face,
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 8.dp)
@@ -165,19 +165,18 @@ private fun BalanceHero(card: SavedCard, state: AppState) {
             .aspectRatio(CardFaces.RATIO),
     ) {
         CompositionLocalProvider(LocalContentColor provides Color.White) {
-            Text(
-                card.data.type.label,
-                style = MaterialTheme.typography.titleMedium.copy(shadow = shadow),
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.TopStart).padding(20.dp),
-            )
-            Column(Modifier.align(Alignment.BottomStart).padding(20.dp)) {
-                Text("余额", style = MaterialTheme.typography.labelLarge.copy(shadow = shadow))
+            // 与最初版本一样的紧凑排版：卡名 · 余额 / 金额 / 读取时间
+            Column(Modifier.align(Alignment.CenterStart).padding(horizontal = 24.dp)) {
+                Text(
+                    card.data.type.label + " · 余额",
+                    style = MaterialTheme.typography.labelLarge.copy(shadow = shadow),
+                )
                 Text(
                     yen(card.data.balance),
                     style = MaterialTheme.typography.displaySmall.copy(shadow = shadow),
-                    fontSize = 40.sp,
+                    fontSize = 44.sp,
                     fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(vertical = 4.dp),
                 )
                 AnimatedContent(
                     targetState = justUpdated,

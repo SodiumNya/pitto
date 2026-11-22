@@ -20,6 +20,7 @@ import app.jpcard.reader.nfc.FelicaReader
 import app.jpcard.reader.ui.App
 import app.jpcard.reader.ui.AppActions
 import app.jpcard.reader.ui.AppState
+import app.jpcard.reader.ui.CropRequest
 import app.jpcard.reader.ui.NfcStatus
 import app.jpcard.reader.ui.theme.AppTheme
 
@@ -63,16 +64,36 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
                 if (state.selectedIdm == idm) state.selectedIdm = null
             },
             setFace = { idm, uri ->
+                // 先解码成适合编辑的大小，再打开裁剪界面
                 state.faceBusy = true
                 Thread {
-                    val ok = CardFaces.save(applicationContext, idm, uri)
+                    val bmp = CardFaces.decodeForEdit(applicationContext, uri)
                     runOnUiThread {
                         state.faceBusy = false
-                        state.faceVersion++
-                        if (!ok) state.error = "这张图片无法使用，请换一张试试"
+                        if (bmp == null) {
+                            state.error = "这张图片无法使用，请换一张试试"
+                        } else {
+                            state.crop = CropRequest(idm, bmp)
+                        }
                     }
                 }.start()
             },
+            confirmCrop = { bmp, rect ->
+                val idm = state.crop?.idm
+                state.crop = null
+                if (idm != null) {
+                    state.faceBusy = true
+                    Thread {
+                        val ok = CardFaces.save(applicationContext, idm, bmp, rect)
+                        runOnUiThread {
+                            state.faceBusy = false
+                            state.faceVersion++
+                            if (!ok) state.error = "卡面保存失败，请再试一次"
+                        }
+                    }.start()
+                }
+            },
+            cancelCrop = { state.crop = null },
             clearFace = { idm -> CardFaces.delete(this, idm); state.faceVersion++ },
             dismissError = { state.error = null },
             openNfcSettings = { startActivity(Intent(Settings.ACTION_NFC_SETTINGS)) },

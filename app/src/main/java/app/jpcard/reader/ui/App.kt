@@ -24,4 +24,8 @@ fun App(state: AppState, actions: AppActions) {
             DetailScreen(card, state, actions)
         }
     }
+
+    state.crop?.let { req ->
+        CropDialog(req.bitmap, onCancel = actions.cancelCrop, onConfirm = actions.confirmCrop)
+    }
 }

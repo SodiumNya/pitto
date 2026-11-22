@@ -51,11 +51,11 @@ fun CardFaceBox(
             if (scrim) {
                 Box(
                     Modifier.fillMaxSize().background(
-                        Brush.verticalGradient(
-                            0f to Color.Black.copy(alpha = 0.35f),
-                            0.3f to Color.Transparent,
-                            0.5f to Color.Transparent,
-                            1f to Color.Black.copy(alpha = 0.6f),
+                        // 文字在左侧，左深右浅的渐变保证文字清晰，又不遮住图片主体
+                        Brush.horizontalGradient(
+                            0f to Color.Black.copy(alpha = 0.55f),
+                            0.6f to Color.Black.copy(alpha = 0.15f),
+                            1f to Color.Transparent,
                         ),
                     ),
                 )

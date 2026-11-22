@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
+import android.graphics.Matrix
+import android.graphics.Rect
 import android.net.Uri
 import android.os.Build
 import androidx.compose.ui.graphics.ImageBitmap
@@ -14,19 +16,20 @@ import kotlin.math.roundToInt
 
 /**
  * 用户自定义卡面。
- * 选中的图片会被居中裁剪成真实卡片比例（85.6 × 54 mm），缩放后存成 JPEG，
- * 只保存在 app 私有目录里。
+ * 用户在裁剪界面里选定的区域会被缩放成 [W]×[H] 存成 JPEG，只保存在 app 私有目录里。
  */
 object CardFaces {
-    const val RATIO = 85.6f / 54f
+    /** 卡面统一比例（宽:高）。详情页余额卡和主页小卡面都用这个比例，裁剪结果完全一致。 */
+    const val RATIO = 2.5f
     private const val W = 1000
-    private val H = (W / RATIO).roundToInt()
+    private const val H = 400
+
+    /** 裁剪界面用的原图最长边，够清晰又不占太多内存。 */
+    private const val EDIT_MAX = 2048
 
     private val cache = HashMap<String, Pair<Long, ImageBitmap>>()
 
     private fun file(context: Context, idm: String) = File(context.filesDir, "faces/$idm.jpg")
-
-    fun has(context: Context, idm: String) = file(context, idm).exists()
 
     /** 从内存缓存直接取，取不到返回 null（不读盘，可在主线程调用）。 */
     fun cached(context: Context, idm: String): ImageBitmap? {
@@ -46,16 +49,35 @@ object CardFaces {
         return img
     }
 
-    /** 处理并保存用户选的图片，在后台线程调用。 */
-    fun save(context: Context, idm: String, uri: Uri): Boolean = runCatching {
-        val src = decode(context, uri) ?: return false
-        // 居中裁剪成卡片比例
-        val (cw, ch) = if (src.width.toFloat() / src.height > RATIO) {
-            (src.height * RATIO).roundToInt() to src.height
+    /** 把用户选的图片解码成适合编辑的大小，在后台线程调用。Android 9+ 会自动按 EXIF 摆正方向。 */
+    fun decodeForEdit(context: Context, uri: Uri): Bitmap? = runCatching {
+        val cr = context.contentResolver
+        if (Build.VERSION.SDK_INT >= 28) {
+            ImageDecoder.decodeBitmap(ImageDecoder.createSource(cr, uri)) { d, info, _ ->
+                val longSide = max(info.size.width, info.size.height)
+                if (longSide > EDIT_MAX) {
+                    val s = EDIT_MAX.toFloat() / longSide
+                    d.setTargetSize((info.size.width * s).roundToInt(), (info.size.height * s).roundToInt())
+                }
+                d.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+            }
         } else {
-            src.width to (src.width / RATIO).roundToInt()
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            cr.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+            var sample = 1
+            while (max(bounds.outWidth, bounds.outHeight) / (sample * 2) >= EDIT_MAX) sample *= 2
+            val opts = BitmapFactory.Options().apply { inSampleSize = sample }
+            cr.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, opts) }
         }
-        val cropped = Bitmap.createBitmap(src, (src.width - cw) / 2, (src.height - ch) / 2, cw, ch)
+    }.getOrNull()
+
+    fun rotate90(src: Bitmap): Bitmap =
+        Bitmap.createBitmap(src, 0, 0, src.width, src.height, Matrix().apply { postRotate(90f) }, true)
+
+    /** 按裁剪区域保存卡面，在后台线程调用。 */
+    fun save(context: Context, idm: String, src: Bitmap, crop: Rect): Boolean = runCatching {
+        val r = Rect(crop).apply { if (!intersect(0, 0, src.width, src.height)) return false }
+        val cropped = Bitmap.createBitmap(src, r.left, r.top, r.width(), r.height())
         val scaled = Bitmap.createScaledBitmap(cropped, W, H, true)
 
         val f = file(context, idm)
@@ -73,24 +95,5 @@ object CardFaces {
     fun delete(context: Context, idm: String) {
         file(context, idm).delete()
         synchronized(cache) { cache.remove(idm) }
-    }
-
-    /** 解码时直接缩小到够用的尺寸，避免大照片占用太多内存；Android 9+ 会自动按 EXIF 旋转。 */
-    private fun decode(context: Context, uri: Uri): Bitmap? {
-        val cr = context.contentResolver
-        return if (Build.VERSION.SDK_INT >= 28) {
-            ImageDecoder.decodeBitmap(ImageDecoder.createSource(cr, uri)) { d, info, _ ->
-                val s = max(1, minOf(info.size.width / W, info.size.height / H))
-                d.setTargetSize(info.size.width / s, info.size.height / s)
-                d.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
-            }
-        } else {
-            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            cr.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
-            var sample = 1
-            while (bounds.outWidth / (sample * 2) >= W && bounds.outHeight / (sample * 2) >= H) sample *= 2
-            val opts = BitmapFactory.Options().apply { inSampleSize = sample }
-            cr.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, opts) }
-        }
     }
 }
