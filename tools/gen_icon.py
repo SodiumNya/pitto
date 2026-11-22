@@ -1,5 +1,5 @@
 """
-把看板娘插画（tools/art/mascot_source.jpg）转换成安卓自适应图标。
+把看板娘插画（tools/art/mascot_source.png）转换成安卓自适应图标。
 
 自适应图标是 108dp 的正方形，系统会按手机的图标形状裁掉外圈，只露出中间约 72dp。
 所以：
@@ -17,7 +17,7 @@ import sys
 from PIL import Image, ImageDraw
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-SRC = os.path.join(ROOT, "tools", "art", "mascot_source.jpg")
+SRC = os.path.join(ROOT, "tools", "art", "mascot_source.png")
 OUT = os.path.join(ROOT, "app", "src", "main", "res", "drawable-nodpi", "ic_launcher_art.webp")
 
 CANVAS = 432          # 108dp @ xxxhdpi
