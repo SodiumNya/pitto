@@ -46,6 +46,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 
@@ -113,6 +118,26 @@ fun TapHint(reading: Boolean, enabled: Boolean, errorTick: Int, modifier: Modifi
                 radius = 2.dp.toPx(),
                 center = phoneTopLeft + Offset(phoneSize.width / 2, inset + 5.dp.toPx()),
             )
+
+            // 透视：被手机挡住的那部分卡片，用半透明 + 虚线轮廓“透”出来
+            val phoneClip = Path().apply { addRoundRect(RoundRect(Rect(phoneTopLeft, phoneSize), phoneCorner)) }
+            clipPath(phoneClip) {
+                rotate(-14f, pivot = center) {
+                    val topLeft = center - Offset(cardW / 2, cardH / 2)
+                    val corner = CornerRadius(5.dp.toPx())
+                    drawRoundRect(color.copy(alpha = 0.16f), topLeft, Size(cardW, cardH), corner)
+                    drawRoundRect(
+                        color.copy(alpha = 0.7f),
+                        topLeft,
+                        Size(cardW, cardH),
+                        corner,
+                        style = Stroke(
+                            width = 1.5.dp.toPx(),
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx())),
+                        ),
+                    )
+                }
+            }
 
             // 感应弧线：露出的卡片右上方
             val arcCenter = Offset(w * 0.86f, h * 0.17f)
