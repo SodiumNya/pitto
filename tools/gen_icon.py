@@ -19,6 +19,8 @@ SKIN = "#FFE7D6"
 SKIN_SHADE = "#F6CDB8"
 EYE = "#13706A"
 EYE_DARK = "#0B3B3E"
+EYE_LIGHT = "#5CC8B2"
+PUPIL = "#06262A"
 LASH = "#22303A"
 BLUSH = "#FF8F9C"
 MOUTH = "#C2525E"
@@ -43,61 +45,69 @@ def S(d, stroke, width, alpha=1.0):
 
 
 ITEMS = [
-    # 后发
-    F("M54,22 C35,22 25,36 25,55 L25,83 C25,87 30,88 32,84 L36,76 L72,76 L76,84 C78,88 83,87 83,83 L83,55 C83,36 73,22 54,22 Z", HAIR_SHADE),
-    # 身体（制服）+ 领子 + 蝴蝶结
-    F("M33,90 C35,80 43,75 54,75 C65,75 73,80 75,90 Z", UNIFORM),
-    F("M46,75.5 L54,84 L62,75.5 C59,74.5 49,74.5 46,75.5 Z", COLLAR),
-    F("M54,81 L49.5,78.5 L49.5,84 Z M54,81 L58.5,78.5 L58.5,84 Z", RIBBON),
-    F(ellipse(54, 81, 1.4, 1.4), RIBBON),
-    # 脖子
-    F("M49,68 L49,76 C51,77.5 57,77.5 59,76 L59,68 Z", SKIN_SHADE),
-    # 脸
-    F("M35,52 C35,39 44,33 54,33 C64,33 73,39 73,52 C73,63 64,72 54,72 C44,72 35,63 35,52 Z", SKIN),
-    # 眼睛（左）
-    F(ellipse(46, 56, 4.4, 5.6), EYE),
-    F(ellipse(46, 57.6, 2.6, 3.2), EYE_DARK),
-    S("M40.2,53.6 L41.6,54.8 C41.8,51.6 43.7,50.3 46,50.3 C48.3,50.3 50.2,51.6 50.4,54.6", LASH, 1.5),
-    F(ellipse(44.6, 54, 1.7, 1.9), "#FFFFFF"),
-    F(ellipse(47.6, 59, 0.8, 0.8), "#FFFFFF"),
-    # 眼睛（右）
-    F(ellipse(62, 56, 4.4, 5.6), EYE),
-    F(ellipse(62, 57.6, 2.6, 3.2), EYE_DARK),
-    S("M67.8,53.6 L66.4,54.8 C66.2,51.6 64.3,50.3 62,50.3 C59.7,50.3 57.8,51.6 57.6,54.6", LASH, 1.5),
-    F(ellipse(60.6, 54, 1.7, 1.9), "#FFFFFF"),
-    F(ellipse(63.6, 59, 0.8, 0.8), "#FFFFFF"),
-    # 腮红、嘴
-    F(ellipse(40.5, 63.2, 3.2, 1.7), BLUSH, 0.55),
-    F(ellipse(67.5, 63.2, 3.2, 1.7), BLUSH, 0.55),
-    S("M51.2,65.4 Q54,68 56.8,65.4", MOUTH, 1.3),
-    # 刘海
-    F("M32,53 C31,36 41,26 54,26 C67,26 77,36 76,53 C74.5,49.5 72.5,46.5 70.5,45 C70,47.5 69.5,49.5 69,51 C67.5,47 65.5,44 63,42 C62,44.5 60.5,46.5 58.5,48 C57.5,45 56,42 54,40 C52,42 50.5,45 49.5,48 C47.5,46.5 46,44.5 45,42 C42.5,44 40.5,47 39,51 C38.5,49.5 38,47.5 37.5,45 C35.5,46.5 33.5,49.5 32,53 Z", HAIR),
+    # 后发（大头：头部占画面大部分）
+    F("M54,20 C32,20 22,34 22,53 L22,80 C22,85 28,86 30,81 L33,74 L75,74 L78,81 C80,86 86,85 86,80 L86,53 C86,34 76,20 54,20 Z", HAIR_SHADE),
+    # 小小的身体
+    F("M37,95 C38,81 45,74.5 54,74.5 C63,74.5 70,81 71,95 Z", UNIFORM),
+    F("M47.5,75 L54,81.5 L60.5,75 C58,74.2 50,74.2 47.5,75 Z", COLLAR),
+    F("M54,79.6 L50,77.4 L50,81.8 Z M54,79.6 L58,77.4 L58,81.8 Z", RIBBON),
+    F(ellipse(54, 79.6, 1.3, 1.3), RIBBON),
+    F("M50.5,68 L50.5,75.2 C52.5,76 55.5,76 57.5,75.2 L57.5,68 Z", SKIN_SHADE),
+    # 圆脸
+    F("M32,52 C32,39 42,32 54,32 C66,32 76,39 76,52 C76,63 67,71 54,71 C41,71 32,63 32,52 Z", SKIN),
+    # 大眼睛（左）：上深下浅的双色瞳孔 + 多层高光
+    F(ellipse(44.5, 56, 5.8, 7.2), EYE_DARK),
+    F(ellipse(44.5, 58.6, 4.6, 4.6), EYE),
+    F(ellipse(44.5, 60.4, 3.2, 2.4), EYE_LIGHT),
+    F(ellipse(44.5, 56.6, 2.2, 2.8), PUPIL),
+    S("M38.2,54.6 C38.4,50.4 41,48.6 44.5,48.6 C48,48.6 50.6,50.4 50.8,54.4", LASH, 1.7),
+    S("M38.4,52.8 L37,51.4", LASH, 1.3),
+    F(ellipse(42.4, 53.4, 2.3, 2.6), "#FFFFFF"),
+    F(ellipse(47, 60.4, 1.1, 1.1), "#FFFFFF"),
+    F(ellipse(43.2, 61.4, 0.6, 0.6), "#FFFFFF", 0.8),
+    # 大眼睛（右）
+    F(ellipse(63.5, 56, 5.8, 7.2), EYE_DARK),
+    F(ellipse(63.5, 58.6, 4.6, 4.6), EYE),
+    F(ellipse(63.5, 60.4, 3.2, 2.4), EYE_LIGHT),
+    F(ellipse(63.5, 56.6, 2.2, 2.8), PUPIL),
+    S("M69.8,54.6 C69.6,50.4 67,48.6 63.5,48.6 C60,48.6 57.4,50.4 57.2,54.4", LASH, 1.7),
+    S("M69.6,52.8 L71,51.4", LASH, 1.3),
+    F(ellipse(61.4, 53.4, 2.3, 2.6), "#FFFFFF"),
+    F(ellipse(66, 60.4, 1.1, 1.1), "#FFFFFF"),
+    F(ellipse(62.2, 61.4, 0.6, 0.6), "#FFFFFF", 0.8),
+    # 腮红（带三道小斜线）、小嘴
+    F(ellipse(37.4, 63.6, 3.8, 2.1), BLUSH, 0.5),
+    F(ellipse(70.6, 63.6, 3.8, 2.1), BLUSH, 0.5),
+    S("M35.8,64.6 L36.8,62.6 M37.6,64.6 L38.6,62.6", BLUSH, 0.7, 0.8),
+    S("M69,64.6 L70,62.6 M70.8,64.6 L71.8,62.6", BLUSH, 0.7, 0.8),
+    F("M52,64.6 Q54,67.6 56,64.6 Z", MOUTH),
+    # 刘海：圆润的发束
+    F("M29,53 C28,33 40,23 54,23 C68,23 80,33 79,53 C77.5,49 75.5,46 73,44.5 C72.5,46.5 72,48 71.5,49.5 C69.5,45.5 67,42.5 64,40.5 C63,43 61.5,45.5 59.5,47 C58.5,43.5 56.5,40.5 54,38.5 C51.5,40.5 49.5,43.5 48.5,47 C46.5,45.5 45,43 44,40.5 C41,42.5 38.5,45.5 36.5,49.5 C36,48 35.5,46.5 35,44.5 C32.5,46 30.5,49 29,53 Z", HAIR),
     # 两侧鬓发
-    F("M34,41 C32,56 33,67 37,76 L41,63 C40,57 40,51 40.5,43 Z", HAIR),
-    F("M74,41 C76,56 75,67 71,76 L67,63 C68,57 68,51 67.5,43 Z", HAIR),
-    # 呆毛
-    F("M53,27 C52,20.5 56,16 62,15.5 C58.5,18.5 57,22 56,27 Z", HAIR),
+    F("M30,40 C28,56 29,68 33,79 L37,65 C36,58 36,51 36.5,42 Z", HAIR),
+    F("M78,40 C80,56 79,68 75,79 L71,65 C72,58 72,51 71.5,42 Z", HAIR),
     # 头发高光
-    S("M43.5,32 C47.5,29.6 52.5,29 56.5,29.8", "#FFFFFF", 1.6, 0.3),
+    S("M41,29.5 C45.5,26.6 51.5,26 56,26.6", "#FFFFFF", 1.6, 0.3),
     # NFC 发卡：三道弧
-    S("M68.5,33 Q71,35.5 68.5,38", ACCENT, 1.7),
-    S("M71.5,31 Q75,35.5 71.5,40", ACCENT, 1.7),
-    S("M74.5,29.5 Q79,35.5 74.5,41.5", ACCENT, 1.7, 0.8),
+    S("M69,30.5 Q71.4,33 69,35.5", ACCENT, 1.7),
+    S("M72,28.5 Q75.4,33 72,37.5", ACCENT, 1.7),
+    S("M75,27 Q79.4,33 75,39", ACCENT, 1.7, 0.8),
     # 手里的交通卡
-    ("group", -12, 76, 66, [
-        F("M70.4,61.6 h11.2 a1.6,1.6 0 0 1 1.6,1.6 v5.6 a1.6,1.6 0 0 1 -1.6,1.6 h-11.2 a1.6,1.6 0 0 1 -1.6,-1.6 v-5.6 a1.6,1.6 0 0 1 1.6,-1.6 Z", CARD),
-        F("M68.8,63.6 h14.4 v1.6 h-14.4 Z", "#FFFFFF", 0.45),
+    ("group", -14, 70, 70, [
+        F("M65.4,65.6 h9.2 a1.4,1.4 0 0 1 1.4,1.4 v6 a1.4,1.4 0 0 1 -1.4,1.4 h-9.2 a1.4,1.4 0 0 1 -1.4,-1.4 v-6 a1.4,1.4 0 0 1 1.4,-1.4 Z", CARD),
+        F("M64,67.4 h12 v1.5 h-12 Z", "#FFFFFF", 0.45),
     ]),
-    # 举卡的手（几根手指搭在卡片下沿）
-    F("M68.6,70.6 C68.2,67.8 70.6,66.6 72.4,67.4 C74,68.2 74.2,70.6 73,72 C71.6,73.4 69,72.6 68.6,70.6 Z", SKIN),
-    S("M70.2,68.4 L71.6,70.6", SKIN_SHADE, 0.7),
+    # 圆圆的小手
+    F(ellipse(66, 73.4, 3, 2.6), SKIN),
 ]
 
 
 def svg_item(it):
     if it[0] == "group":
-        _, rot, px, py, items = it
-        return '<g transform="rotate(%g %g %g)">%s</g>' % (rot, px, py, "".join(svg_item(i) for i in items))
+        _, rot, px, py, items, *rest = it
+        sc = rest[0] if rest else 1
+        return ('<g transform="translate(%g %g) rotate(%g) scale(%g) translate(%g %g)">%s</g>'
+                % (px, py, rot, sc, -px, -py, "".join(svg_item(i) for i in items)))
     d, fill, stroke, w, a = it
     if fill:
         return '<path d="%s" fill="%s" fill-opacity="%g"/>' % (d, fill, a)
@@ -106,10 +116,12 @@ def svg_item(it):
 
 def xml_item(it, indent="    "):
     if it[0] == "group":
-        _, rot, px, py, items = it
+        _, rot, px, py, items, *rest = it
+        sc = rest[0] if rest else 1
         inner = "".join(xml_item(i, indent + "    ") for i in items)
-        return ('%s<group android:rotation="%g" android:pivotX="%g" android:pivotY="%g">\n%s%s</group>\n'
-                % (indent, rot, px, py, inner, indent))
+        return ('%s<group android:rotation="%g" android:pivotX="%g" android:pivotY="%g" '
+                'android:scaleX="%g" android:scaleY="%g">\n%s%s</group>\n'
+                % (indent, rot, px, py, sc, sc, inner, indent))
     d, fill, stroke, w, a = it
     if fill:
         return '%s<path android:fillColor="%s" android:fillAlpha="%g" android:pathData="%s" />\n' % (indent, fill, a, d)
@@ -117,8 +129,12 @@ def xml_item(it, indent="    "):
             'android:strokeLineCap="round" android:pathData="%s" />\n' % (indent, stroke, w, a, d))
 
 
+# 整个角色缩到 90%，四周留出一点背景
+SCENE = [("group", 0, 54, 60, ITEMS, 0.9)]
+
+
 def main(preview):
-    body = "".join(svg_item(i) for i in ITEMS)
+    body = "".join(svg_item(i) for i in SCENE)
     svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="432" height="432">'
            '<defs><clipPath id="c"><circle cx="54" cy="54" r="33"/></clipPath></defs>'
            '<g clip-path="url(#c)"><rect width="108" height="108" fill="%s"/>%s</g></svg>' % (BG, body))
@@ -131,7 +147,7 @@ def main(preview):
            '<vector xmlns:android="http://schemas.android.com/apk/res/android"\n'
            '    android:width="108dp" android:height="108dp"\n'
            '    android:viewportWidth="108" android:viewportHeight="108">\n'
-           + "".join(xml_item(i) for i in ITEMS) + '</vector>\n')
+           + "".join(xml_item(i) for i in SCENE) + '</vector>\n')
     with open(os.path.join(root, "ic_launcher_foreground.xml"), "w", encoding="utf-8", newline="\n") as f:
         f.write(xml)
     with open(os.path.join(root, "ic_launcher_background.xml"), "w", encoding="utf-8", newline="\n") as f:
