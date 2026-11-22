@@ -1,4 +1,19 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
+
+/**
+ * 正式签名：密钥文件和密码都不进 git。
+ * local.properties 里的 pitto.signing 指向一个 properties 文件（storeFile / storePassword / keyAlias / keyPassword）。
+ * 找不到时退回 debug 签名，保证别的电脑也能编译。
+ */
+val signingProps: Properties? = run {
+    val local = Properties()
+    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { local.load(it) }
+    val path = local.getProperty("pitto.signing") ?: return@run null
+    val f = file(path)
+    if (!f.exists()) return@run null
+    Properties().apply { f.inputStream().use { load(it) } }
+}
 
 plugins {
     id("com.android.application")
@@ -15,7 +30,18 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "1.0.0"
+    }
+
+    signingConfigs {
+        if (signingProps != null) {
+            create("release") {
+                storeFile = file(signingProps.getProperty("storeFile"))
+                storePassword = signingProps.getProperty("storePassword")
+                keyAlias = signingProps.getProperty("keyAlias")
+                keyPassword = signingProps.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
@@ -26,8 +52,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            // 自用阶段直接用 debug 签名，方便安装；上架前换成自己的签名
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
 

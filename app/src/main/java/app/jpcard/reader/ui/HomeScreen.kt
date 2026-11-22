@@ -18,6 +18,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -65,6 +67,7 @@ fun HomeScreen(state: AppState, actions: AppActions) {
                         SavedCardRow(card, state.faceVersion, Modifier.animateItem()) { actions.openCard(card.idm) }
                     }
                 }
+                item { AboutFooter() }
             }
         }
     }
@@ -89,7 +92,8 @@ private fun HintCard(state: AppState, actions: AppActions) {
                     state.nfcStatus == NfcStatus.UNSUPPORTED -> "此设备不支持 NFC"
                     !enabled -> "NFC 已关闭"
                     state.reading -> "正在读取，请勿移开卡片"
-                    else -> "将交通卡贴近手机背面"
+                    state.cards.isEmpty() -> "将交通卡贴近手机背面以添加卡片"
+                    else -> "将交通卡贴近手机背面以添加或更新"
                 },
                 style = MaterialTheme.typography.titleMedium,
             )
@@ -156,5 +160,29 @@ private fun SavedCardRow(card: SavedCard, faceVersion: Int, modifier: Modifier, 
             }
             Text(yen(card.data.balance), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
         }
+    }
+}
+
+/** 主页底部：版本、版权与数据来源（站名数据为 GPL-3.0，需要注明出处）。 */
+@Composable
+private fun AboutFooter() {
+    val context = LocalContext.current
+    val version = remember {
+        runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: ""
+    }
+    Column(
+        Modifier.fillMaxWidth().padding(top = 32.dp, bottom = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            "Pitto $version · © 2026",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.outline,
+        )
+        Text(
+            "站名数据来自 Metrodroid（GPL-3.0）",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.outline,
+        )
     }
 }
