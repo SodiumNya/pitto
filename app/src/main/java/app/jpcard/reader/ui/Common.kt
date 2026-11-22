@@ -45,23 +45,14 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
-
-/** 卡片在提示图里的中心位置（相对画布宽高），波纹也从这里扩散。 */
-private const val CARD_CX = 0.66f
-private const val CARD_CY = 0.34f
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 
 /**
- * 贴卡提示图：手机正面 + 一张藏在手机背后、从右侧露出一截的卡片 + 感应弧线，
- * 一眼看出“把卡贴在手机背面”。
- * 平时完全静止，不让人误以为一直在读取；只有正在读卡时卡片处出现扩散波纹；读取失败时左右抖一下。
+ * 贴卡提示图：手机正面（屏幕上写着 NFC）+ 左右两组感应波纹。
+ * 平时完全静止，不让人误以为一直在读取；只有正在读卡时从手机向外扩散波纹；读取失败时左右抖一下。
  */
 @Composable
 fun TapHint(reading: Boolean, enabled: Boolean, errorTick: Int, modifier: Modifier = Modifier) {
@@ -75,32 +66,19 @@ fun TapHint(reading: Boolean, enabled: Boolean, errorTick: Int, modifier: Modifi
         for (x in listOf(10f, -8f, 6f, -4f, 0f)) shake.animateTo(x, tween(50))
     }
 
-    Box(modifier.size(128.dp).graphicsLayer { translationX = shake.value.dp.toPx() }) {
+    Box(
+        modifier.size(128.dp).graphicsLayer { translationX = shake.value.dp.toPx() },
+        contentAlignment = Alignment.Center,
+    ) {
         if (reading) Ripples(base)
         Canvas(Modifier.size(128.dp)) {
             val w = size.width
             val h = size.height
             val line = 2.5.dp.toPx()
 
-            // 先画卡片：它在手机背后，只从右侧露出一截
-            val cardW = w * 0.50f
-            val cardH = cardW / 1.586f
-            val center = Offset(w * CARD_CX, h * CARD_CY)
-            rotate(-14f, pivot = center) {
-                val topLeft = center - Offset(cardW / 2, cardH / 2)
-                val corner = CornerRadius(5.dp.toPx())
-                drawRoundRect(color, topLeft, Size(cardW, cardH), corner)
-                // 卡面上的一道浅色条纹，像真卡
-                drawRect(
-                    Color.White.copy(alpha = 0.35f),
-                    topLeft + Offset(0f, cardH * 0.22f),
-                    Size(cardW, cardH * 0.16f),
-                )
-            }
-
-            // 再画手机正面，盖住卡片的一部分
-            val phoneTopLeft = Offset(w * 0.20f, h * 0.10f)
-            val phoneSize = Size(w * 0.40f, h * 0.80f)
+            // 手机正面，居中
+            val phoneSize = Size(w * 0.36f, h * 0.72f)
+            val phoneTopLeft = Offset((w - phoneSize.width) / 2, (h - phoneSize.height) / 2)
             val phoneCorner = CornerRadius(10.dp.toPx())
             drawRoundRect(surface, phoneTopLeft, phoneSize, phoneCorner)
             drawRoundRect(color, phoneTopLeft, phoneSize, phoneCorner, style = Stroke(line))
@@ -119,41 +97,32 @@ fun TapHint(reading: Boolean, enabled: Boolean, errorTick: Int, modifier: Modifi
                 center = phoneTopLeft + Offset(phoneSize.width / 2, inset + 5.dp.toPx()),
             )
 
-            // 透视：被手机挡住的那部分卡片，用半透明 + 虚线轮廓“透”出来
-            val phoneClip = Path().apply { addRoundRect(RoundRect(Rect(phoneTopLeft, phoneSize), phoneCorner)) }
-            clipPath(phoneClip) {
-                rotate(-14f, pivot = center) {
-                    val topLeft = center - Offset(cardW / 2, cardH / 2)
-                    val corner = CornerRadius(5.dp.toPx())
-                    drawRoundRect(color.copy(alpha = 0.16f), topLeft, Size(cardW, cardH), corner)
-                    drawRoundRect(
-                        color.copy(alpha = 0.7f),
-                        topLeft,
-                        Size(cardW, cardH),
-                        corner,
-                        style = Stroke(
-                            width = 1.5.dp.toPx(),
-                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx())),
-                        ),
+            // 左右两组感应波纹，以手机中心为圆心
+            val c = Offset(w / 2, h / 2)
+            for (i in 0..1) {
+                val r = phoneSize.width / 2 + (11 + i * 8).dp.toPx()
+                val alpha = 0.8f - i * 0.35f
+                for (start in listOf(-30f, 150f)) {
+                    drawArc(
+                        color = color.copy(alpha = alpha),
+                        startAngle = start,
+                        sweepAngle = 60f,
+                        useCenter = false,
+                        topLeft = c - Offset(r, r),
+                        size = Size(r * 2, r * 2),
+                        style = Stroke(width = line, cap = StrokeCap.Round),
                     )
                 }
             }
-
-            // 感应弧线：露出的卡片右上方
-            val arcCenter = Offset(w * 0.86f, h * 0.17f)
-            for (i in 1..2) {
-                val r = (3 + i * 5).dp.toPx()
-                drawArc(
-                    color = color.copy(alpha = 1f - i * 0.3f),
-                    startAngle = -80f,
-                    sweepAngle = 70f,
-                    useCenter = false,
-                    topLeft = arcCenter - Offset(r, r),
-                    size = Size(r * 2, r * 2),
-                    style = Stroke(width = line, cap = StrokeCap.Round),
-                )
-            }
         }
+        // 屏幕上的 NFC 字样
+        Text(
+            "NFC",
+            color = color,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp,
+        )
     }
 }
 
@@ -166,12 +135,12 @@ private fun Ripples(color: Color) {
         label = "p",
     )
     Canvas(Modifier.size(128.dp)) {
-        val c = Offset(size.width * CARD_CX, size.height * CARD_CY)
+        val c = Offset(size.width / 2, size.height / 2)
         for (i in 0..1) {
             val f = (p + i * 0.5f) % 1f
             drawCircle(
                 color = color.copy(alpha = 0.4f * (1 - f)),
-                radius = size.minDimension * (0.22f + 0.22f * f),
+                radius = size.minDimension * (0.26f + 0.24f * f),
                 center = c,
                 style = Stroke(width = 3.dp.toPx()),
             )
