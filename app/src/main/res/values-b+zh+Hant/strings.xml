@@ -44,6 +44,9 @@
     <string name="err_read_failed">讀取失敗，請將卡片貼穩後重試</string>
     <string name="err_image">無法讀取這張圖片，請換一張</string>
     <string name="err_face_save">卡面儲存失敗，請重試</string>
+    <string name="settings">設定</string>
+    <string name="language">語言</string>
+    <string name="language_system">跟隨系統</string>
     <string name="kind_train">乘車</string>
     <string name="kind_bus">巴士</string>
     <string name="kind_shopping">購物</string>

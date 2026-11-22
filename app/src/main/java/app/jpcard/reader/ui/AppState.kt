@@ -7,15 +7,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModel
 import app.jpcard.reader.data.SavedCard
 
 class CropRequest(val idm: String, val bitmap: Bitmap)
 
 enum class NfcStatus { READY, DISABLED, UNSUPPORTED }
 
-class AppState {
+/** 界面状态。放在 ViewModel 里，切换语言等导致界面重建时原样保留（停在原来的页面）。 */
+class AppState : ViewModel() {
     var cards by mutableStateOf<List<SavedCard>>(emptyList())
     var selectedIdm by mutableStateOf<String?>(null)
+    var showSettings by mutableStateOf(false)
     var reading by mutableStateOf(false)
     /** 错误提示的文字资源 id */
     var error by mutableStateOf<Int?>(null)
@@ -51,6 +54,8 @@ class AppState {
 class AppActions(
     val openCard: (String) -> Unit,
     val back: () -> Unit,
+    val openSettings: () -> Unit,
+    val setLanguage: (String) -> Unit,
     val rename: (String, String) -> Unit,
     val delete: (String) -> Unit,
     val setFace: (String, Uri) -> Unit,

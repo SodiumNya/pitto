@@ -45,6 +45,9 @@
     <string name="err_read_failed">Couldn\'t read the card. Hold it still and try again.</string>
     <string name="err_image">Couldn\'t open this image. Please choose another.</string>
     <string name="err_face_save">Couldn\'t save the card face. Please try again.</string>
+    <string name="settings">Settings</string>
+    <string name="language">Language</string>
+    <string name="language_system">System default</string>
     <string name="kind_train">Train</string>
     <string name="kind_bus">Bus</string>
     <string name="kind_shopping">Shopping</string>

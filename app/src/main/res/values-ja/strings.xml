@@ -44,6 +44,9 @@
     <string name="err_read_failed">読み取りに失敗しました。カードを動かさずにもう一度お試しください。</string>
     <string name="err_image">この画像は使用できません。別の画像を選んでください。</string>
     <string name="err_face_save">カード画像を保存できませんでした。もう一度お試しください。</string>
+    <string name="settings">設定</string>
+    <string name="language">言語</string>
+    <string name="language_system">システムの設定</string>
     <string name="kind_train">乗車</string>
     <string name="kind_bus">バス</string>
     <string name="kind_shopping">物販</string>

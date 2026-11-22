@@ -10,8 +10,10 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.viewModels
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import app.jpcard.reader.data.AppLanguage
 import app.jpcard.reader.data.CardFaces
 import app.jpcard.reader.data.CardStore
 import app.jpcard.reader.data.Stations
@@ -29,13 +31,17 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
     private var nfc: NfcAdapter? = null
     private lateinit var store: CardStore
     private lateinit var feedback: Feedback
-    private val state = AppState()
+    private val state: AppState by viewModels()
 
     /** 系统在 NFC 开关变化时发广播，只在前台时注册，不轮询、不耗电。 */
     private val nfcStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             refreshNfc()
         }
+    }
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLanguage.wrap(newBase))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,7 +61,11 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
 
         val actions = AppActions(
             openCard = { state.selectedIdm = it },
-            back = { state.selectedIdm = null },
+            back = {
+                if (state.showSettings) state.showSettings = false else state.selectedIdm = null
+            },
+            openSettings = { state.showSettings = true },
+            setLanguage = { tag -> AppLanguage.set(this, tag) },
             rename = { idm, name -> store.rename(idm, name); state.cards = store.all() },
             delete = { idm ->
                 store.delete(idm)
@@ -183,4 +193,5 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
             }
         }
     }
+
 }

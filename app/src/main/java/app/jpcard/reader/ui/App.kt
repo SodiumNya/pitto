@@ -7,21 +7,27 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 
+private const val SETTINGS = "#settings"
+
 @Composable
 fun App(state: AppState, actions: AppActions) {
     val selected = state.selected
-    BackHandler(enabled = selected != null) { actions.back() }
+    BackHandler(enabled = selected != null || state.showSettings) { actions.back() }
 
     AnimatedContent(
-        targetState = selected?.idm,
+        targetState = if (state.showSettings) SETTINGS else selected?.idm,
         transitionSpec = { fadeIn() togetherWith fadeOut() },
         label = "screen",
-    ) { idm ->
-        val card = state.cards.find { it.idm == idm }
-        if (card == null) {
-            HomeScreen(state, actions)
+    ) { key ->
+        if (key == SETTINGS) {
+            SettingsScreen(actions)
         } else {
-            DetailScreen(card, state, actions)
+            val card = state.cards.find { it.idm == key }
+            if (card == null) {
+                HomeScreen(state, actions)
+            } else {
+                DetailScreen(card, state, actions)
+            }
         }
     }
 
