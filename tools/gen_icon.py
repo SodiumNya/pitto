@@ -3,7 +3,7 @@ Turns the mascot artwork (tools/art/mascot_source.png) into the adaptive icon la
 
 An adaptive icon is a 108dp square; launchers mask it and show roughly the middle 72dp.
 So the script:
-  1. crops off the white corners and the frame around the artwork,
+  1. crops a square region of the artwork (see CROP),
   2. scales it to 64dp (Samsung's mask only shows about 64-66dp) to keep the whole picture,
   3. pads the rest with the artwork's average edge color as a safety margin.
 Output: app/src/main/res/drawable-nodpi/ic_launcher_art.webp (432x432, i.e. 108dp at xxxhdpi).
@@ -22,7 +22,9 @@ OUT = os.path.join(ROOT, "app", "src", "main", "res", "drawable-nodpi", "ic_laun
 
 CANVAS = 432          # 108dp @ xxxhdpi
 ART = CANVAS * 64 // 108   # some launchers (Samsung) mask tighter than the standard 72dp
-CORNER_INSET = 60     # trims the white corners and the light frame drawn around the artwork
+# Square region of the 1024x1024 artwork to use: from the cap down to the shoulders.
+# It drops the white corners, the light frame and the "Pitto" lettering at the bottom.
+CROP = (162, 56, 862, 756)
 
 
 def edge_color(im):
@@ -36,7 +38,7 @@ def edge_color(im):
 def main(preview=None):
     im = Image.open(SRC).convert("RGB")
     w, h = im.size
-    art = im.crop((CORNER_INSET, CORNER_INSET, w - CORNER_INSET, h - CORNER_INSET))
+    art = im.crop(CROP)
     art = art.resize((ART, ART), Image.LANCZOS)
 
     canvas = Image.new("RGB", (CANVAS, CANVAS), edge_color(art))
